@@ -1,0 +1,10 @@
+[app]
+name = "Petal Hero"
+menu = "Music"
+
+[entry]
+class = "App"
+
+[metadata]
+author = "dos"
+license = "GPL-3.0-or-later"
