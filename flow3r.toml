@@ -3,7 +3,7 @@ name = "Petal Hero"
 menu = "Music"
 
 [entry]
-class = "App"
+class = "PetalHero"
 
 [metadata]
 author = "dos"
