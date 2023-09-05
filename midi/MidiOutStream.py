@@ -19,6 +19,8 @@ class MidiOutStream:
 
     """
 
+    __slots__ = ("_absolute_time", "_relative_time", "_current_track", "_running_status",)
+
     def __init__(self):
         
         # the time is rather global, so it needs to be stored 

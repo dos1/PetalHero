@@ -1,19 +1,15 @@
 class Flower:
-    def __init__(self, x: float, y: float, z: float) -> None:
-        self.x = x
-        self.y = y
-        self.z = z
+    def __init__(self, rot_speed: float) -> None:
         self.rot = 0.0
-        self.rot_speed = 1 / 800 #(((random.getrandbits(16) - 32767) / 32767.0) - 0.5) / 800
+        self.rot_speed = rot_speed
+
+    def think(self, delta_ms: float) -> None:
+        self.rot += float(delta_ms) * self.rot_speed
 
     def draw(self, ctx: Context) -> None:
         ctx.save()
         ctx.rotate(self.rot)
-        ctx.translate(-78 + self.x, -70 + self.y)
-        #ctx.translate(50, 40)
-
-        #ctx.translate(-50, -40)
-        #ctx.scale(100 / self.z, 100.0 / self.z)
+        ctx.translate(-78, -70)
         ctx.move_to(76.221727, 3.9788409).curve_to(
             94.027758, 31.627675, 91.038918, 37.561293, 94.653428, 48.340473
         ).rel_curve_to(

@@ -7,39 +7,49 @@ import st3m.run
 import leds
 import time
 import bl00mbox
+import sys_display
 
 # TODO: FIXME
 import sys
 sys.path.append('/flash/apps/PetalHero')
 
-import song
 import flower
 import utils
+import select
 
 class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
         super().__init__(app_ctx)
-        self.input = InputController()
+        self.app = self
         self.path = getattr(app_ctx, 'bundle_path', '/flash/apps/PetalHero')
         if not self.path:
             self.path = '/flash/apps/PetalHero'
 
-        self.flower = flower.Flower(0, 0, 0.01)
-        self.time = 0
-        self.repeats = 0
+        self.flower = flower.Flower(0.00125)
+        self.loaded = False
+        self.blm = None
+        #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
+        #self.blm_extra.background_mute_override = True
+
+    def load(self):
+        if self.loaded:
+            return
 
         self.blm = bl00mbox.Channel("Petal Hero")
+        self.blm.volume = 14000
 
-        self.in_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/in.wav")
-        self.in_sound.signals.output = self.blm.mixer
+        self.app.in_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/in.wav")
+        self.app.in_sound.signals.output = self.blm.mixer
 
-        self.out_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/out.wav")
-        self.out_sound.signals.output = self.blm.mixer
+        self.app.out_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/out.wav")
+        self.app.out_sound.signals.output = self.blm.mixer
 
-        self.crunch_sound = []
+        self.app.crunch_sound = []
         for i in range(3):
-            self.crunch_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/crunch" + str(i+1) + ".wav"))
-            self.crunch_sound[i].signals.output = self.blm.mixer
+            self.app.crunch_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/crunch" + str(i+1) + ".wav"))
+            self.app.crunch_sound[i].signals.output = self.blm.mixer
+
+        self.loaded = True
 
     def draw(self, ctx: Context):
         ctx.linear_gradient(-120, -120, 120, 120)
@@ -79,26 +89,41 @@ class PetalHero(Application):
         ctx.text_baseline = ctx.MIDDLE
         ctx.gray(1.0)
         ctx.move_to(0, 70 + math.sin(self.time * 4) * 4)
-        ctx.text("Press the button...")
+        ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
+
+    def unload(self):
+        if not self.loaded or not self.exiting:
+            return
+        self.blm.foreground = False
+        self.blm.free = True
+        self.blm = None
+        self.loaded = False
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         self.input.think(ins, delta_ms)
         media.think(delta_ms)
+        self.flower.think(delta_ms)
 
-        for c in [self.flower]:
-            c.rot += float(delta_ms) * c.rot_speed
-        self.time += delta_ms / 1000
+        if self.time < 0:
+            self.time = 0
+        else:
+            self.time += delta_ms / 1000
 
+        #if media.get_position() == media.get_duration():
+        #    media.seek(0)
+        #print(media.get_position(), media.get_duration(), media.get_time())
+          
         if self.time // 18 > self.repeats and self.repeats >= 0:
             media.load(self.path + '/menu.mp3')
             self.repeats += 1
 
         if self.input.buttons.app.middle.pressed:
-            self.in_sound.signals.trigger.start()
-            self.vm.push(song.SongView(self), ViewTransitionSwipeLeft())
+            self.app.in_sound.signals.trigger.start()
+            self.vm.push(select.SelectView(self.app), ViewTransitionSwipeLeft())
 
         if self.input.buttons.os.middle.pressed:
-            self.out_sound.signals.trigger.start()
+            self.app.out_sound.signals.trigger.start()
+            self.unload()
 
         if self.exiting:
             return
@@ -106,7 +131,7 @@ class PetalHero(Application):
         #leds.set_brightness(32 - int(math.cos(self.time) * 32))
             
         led = -3
-        for col in [RED, (1.0, 1.0, 0.0), BLUE, PUSH_RED, GO_GREEN]:
+        for col in [RED, (1.0, 0.69, 0.0), BLUE, PUSH_RED, GO_GREEN]:
             for i in range(7):
                 leds.set_rgb(led if led >= 0 else led + 40, *utils.dim(col, -math.cos(self.time) / 2 + 0.5))
                 led += 1
@@ -117,12 +142,14 @@ class PetalHero(Application):
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
+        if not self.loaded:
+            self.load()
         #self._vm = vm
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
         media.load(self.path + '/menu.mp3')
         self.repeats = 0
-        self.time = 0
+        self.time = -1
         self.exiting = False
         leds.set_brightness(69)
 
