@@ -52,13 +52,7 @@ class PetalHero(Application):
         self.loaded = True
 
     def draw(self, ctx: Context):
-        ctx.linear_gradient(-120, -120, 120, 120)
-
-        ctx.add_stop(0.0, [94, 0, 0], 1.0)
-        ctx.add_stop(1.0, [51, 0, 0], 1.0)
-
-        ctx.rectangle(-120, -120, 240, 240)
-        ctx.fill()
+        utils.background(ctx)
 
         ctx.save()
         ctx.translate(0, -10)
@@ -66,10 +60,7 @@ class PetalHero(Application):
         ctx.rgba(0.1, 0.4, 0.3, 0.42)
         self.flower.draw(ctx)
 
-        ctx.linear_gradient(-50, 0, 50, 0)
-        ctx.add_stop(0.0, [145, 37, 0], 1.0)
-        ctx.add_stop(0.5, [245, 111, 0], 0.75)
-        ctx.add_stop(1.0, [151, 42, 0], 1.0)
+        utils.fire_gradient(ctx)
 
         #ctx.rgb(0.1, 0.4, 0.3)
         ctx.font = "Camp Font 2"
@@ -129,15 +120,11 @@ class PetalHero(Application):
             return
 
         #leds.set_brightness(32 - int(math.cos(self.time) * 32))
-            
-        led = -3
-        for col in [RED, (1.0, 0.69, 0.0), BLUE, PUSH_RED, GO_GREEN]:
-            for i in range(7):
-                leds.set_rgb(led if led >= 0 else led + 40, *utils.dim(col, -math.cos(self.time) / 2 + 0.5))
-                led += 1
-            leds.set_rgb(led, 0, 0, 0)
-            led += 1
-            
+        leds.set_all_rgb(0, 0, 0)
+
+        for i in range(5):
+            utils.petal_leds(i, -math.cos(self.time) / 2 + 0.5)
+
         leds.update()
 
     def on_enter(self, vm) -> None:

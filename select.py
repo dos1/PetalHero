@@ -12,6 +12,7 @@ import midireader
 import flower
 import difficulty
 import songinfo
+import utils
 
 def discover_songs(path: str):
     path = path.rstrip("/")
@@ -70,11 +71,7 @@ class SelectView(BaseView):
 
     def draw(self, ctx: Context) -> None:
         
-        ctx.linear_gradient(-120, -120, 120, 120)
-        ctx.add_stop(0.0, [94, 0, 0], 1.0)
-        ctx.add_stop(1.0, [51, 0, 0], 1.0)
-        ctx.rectangle(-120, -120, 240, 240)
-        ctx.fill()
+        utils.background(ctx)
 
         ctx.save()
         ctx.scale(1.9, 1.9)
@@ -90,10 +87,8 @@ class SelectView(BaseView):
             
         if self.to_process:
             self.processing_now = self.to_process.pop()
-            ctx.linear_gradient(-50, 0, 50, 0)
-            ctx.add_stop(0.0, [145, 37, 0], 1.0)
-            ctx.add_stop(0.5, [245, 111, 0], 0.75)
-            ctx.add_stop(1.0, [151, 42, 0], 1.0)
+
+            utils.fire_gradient(ctx)
             
             ctx.font = "Camp Font 1"
             ctx.font_size = 18
@@ -162,10 +157,7 @@ class SelectView(BaseView):
         ctx.rectangle(-120, 65, 240, 55)
         ctx.fill()
         
-        ctx.linear_gradient(-50, 0, 50, 0)
-        ctx.add_stop(0.0, [145, 37, 0], 1.0)
-        ctx.add_stop(0.5, [245, 111, 0], 0.75)
-        ctx.add_stop(1.0, [151, 42, 0], 1.0)
+        utils.fire_gradient(ctx)
         
         ctx.font = "Camp Font 1"
         ctx.font_size = 25

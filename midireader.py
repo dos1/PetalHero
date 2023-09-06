@@ -38,10 +38,14 @@ for basenote, diff in baseNotes.items():
 reverseNoteMap = dict([(v, k) for k, v in list(noteMap.items())])
 
 class Event:
+  __slots__ = ("length",)
+
   def __init__(self, length):
     self.length = length
 
 class Note(Event):
+  __slots__ = ("number", "played", "special", "tappable",)
+
   def __init__(self, number, length, special = False, tappable = False):
     super().__init__(length)
     self.number   = number
@@ -53,6 +57,8 @@ class Note(Event):
     return "<Note #%d length: %d>" % (self.number, self.length)
 
 class Tempo(Event):
+  __slots__ = ("bpm",)
+
   def __init__(self, bpm):
     super().__init__(0)
     self.bpm = bpm
