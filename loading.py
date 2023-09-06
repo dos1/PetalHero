@@ -26,6 +26,7 @@ class LoadingView(BaseView):
         ctx.text("Loading...")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
+        super().think(ins, delta_ms)
         if delta_ms > 100:
             delta_ms = 0
         self.delay -= delta_ms

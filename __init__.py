@@ -28,6 +28,7 @@ class PetalHero(Application):
         self.flower = flower.Flower(0.00125)
         self.loaded = False
         self.blm = None
+        self.fiba_sound = None
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
 
@@ -50,6 +51,15 @@ class PetalHero(Application):
             self.app.crunch_sound[i].signals.output = self.blm.mixer
 
         self.loaded = True
+
+    def load_fiba(self):
+        if self.app.fiba_sound:
+            return
+
+        self.app.fiba_sound = []
+        for i in range(6):
+            self.app.fiba_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/fiba" + str(i+1) + ".wav"))
+            self.app.fiba_sound[i].signals.output = self.blm.mixer
 
     def draw(self, ctx: Context):
         utils.background(ctx)
@@ -89,9 +99,13 @@ class PetalHero(Application):
         self.blm.free = True
         self.blm = None
         self.loaded = False
+        self.in_sound = None
+        self.out_sound = None
+        self.crunch_sound = None
+        self.fiba_sound = None
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        self.input.think(ins, delta_ms)
+        super().think(ins, delta_ms)
         media.think(delta_ms)
         self.flower.think(delta_ms)
 

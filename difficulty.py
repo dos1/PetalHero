@@ -18,6 +18,8 @@ class DifficultyView(BaseView):
         self._sc = ScrollController()
         self.song = song
         self._sc.set_item_count(len(self.song.difficulties))
+        if len(self.song.difficulties) > 2:
+            self._sc.scroll_right()
         self._scroll_pos = 0
 
     def draw(self, ctx: Context) -> None:
@@ -106,11 +108,11 @@ class DifficultyView(BaseView):
         if self.input.buttons.app.left.pressed:
             self._sc.scroll_left()
             self._scroll_pos = 0.0
-            self.app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
+            utils.play_crunch(self.app)
         elif self.input.buttons.app.right.pressed:
             self._sc.scroll_right()
             self._scroll_pos = 0.0
-            self.app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
+            utils.play_crunch(self.app)
             
         if self.input.buttons.app.middle.pressed:
             self.app.in_sound.signals.trigger.start()

@@ -7,6 +7,7 @@ import math
 import media
 import leds
 import sys_display
+import gc
 
 import midi
 import midireader
@@ -19,6 +20,7 @@ class SongView(BaseView):
         self.app = app
         self.song = song
         self.difficulty = difficulty
+        self.app.load_fiba()
         self.data = midireader.MidiReader(self.song)
         midiIn = midi.MidiInFile(self.data, self.song.dirName + '/notes.mid')
         midiIn.read()
@@ -27,23 +29,38 @@ class SongView(BaseView):
         self.time = -self.delay
         self.flower = flower.Flower(0)
         self.events = []
+        self.petals = [False] * 5
+        self.demo_mode = False
 
     def draw(self, ctx: Context) -> None:
         # Paint the background black
-        if self.started:
+        if self.delay < 1000:
             sys_display.set_mode(2)
+            
+        ctx.compositing_mode = ctx.COPY
+        DELAY = 100
 
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
                 
         ctx.gray(0.25)
         
-        for i in range(4):
-            ctx.arc(0, 0, 30 * (i+1-(self.time / self.data.period) % 1), 0, tau, 0)
-            ctx.stroke()
+        self.time -= DELAY
+        for i in range(0, 2):
+            ctx.gray(0.30 - i/5*(1-(self.time/2 / self.data.period) % 1) * 0.15)
+            ctx.line_width = 2 + i/5*(1-(self.time/2 / self.data.period) % 1) * 2
+            pos = 23*2 * (i+1-(self.time/2 / self.data.period) % 1)
+            if pos > 0:
+              ctx.arc(0, 0, 28 + pos, 0, tau, 0)
+              ctx.stroke()
+        self.time += DELAY
         
-        ctx.gray(0.5)
-        
+        ctx.line_width = 2
+
         ctx.save()
+        ctx.gray(1.0)
+        ctx.arc(0, 0, 28, 0, tau, 0)
+        ctx.stroke()
+        ctx.gray(0.5)
         ctx.rotate(tau / 5 / 2)
         for i in range(5):
             ctx.move_to(0, 0)
@@ -57,33 +74,69 @@ class SongView(BaseView):
         start = self.time + self.data.period * 4
         stop = self.time
         for i in range(5):
-            ctx.rgb(*utils.PETAL_COLORS[i])
             for time, event in self.events:
                 if not isinstance(event, midireader.Note): continue
                 if not start >= time >= stop and not start >= (time + event.length) >= stop and not time <= stop <= (time + event.length): continue
                 if not event.number == i: continue
-                ctx.move_to(0, max(0, - (stop - time) / (start - stop) * 120))
-                ctx.line_to(0, max(0, - (stop - (time + event.length)) / (start - stop) * 120))
+
+                length = event.length
+                during = False
+                arc = tau/20
+                if self.demo_mode:
+                    time -= DELAY
+                if (self.petals[i] or self.demo_mode) and time < self.time and time + length > self.time:
+                    length -= self.time - time
+                    time = self.time
+                    orig_time = time
+                    during = True
+                    arc *= 1.5
+                else:
+                    orig_time = time
+                    if not self.demo_mode:
+                        time -= DELAY
+                    
+                ctx.line_width = 6
+                ctx.line_cap = ctx.NONE
+                if event.length > 120:
+                    d = 0.75 if orig_time >= self.time else 0.25
+                    if during: d = 1.0
+                    ctx.rgb(*utils.dim(utils.PETAL_COLORS[i], d))
+                    ctx.move_to(0, max(0, - (stop - time) / (start - stop) * 92 + 28))
+                    ctx.line_to(0, max(0, - (stop - (time + length)) / (start - stop) * 92 + 28))
+                    ctx.stroke()
+                
+                ctx.rgb(*utils.PETAL_COLORS[i])
+                pos = - (stop - time) / (start - stop)
+                ctx.line_width = 3 + 3 * pos
+                if pos >= 0:
+                    ctx.arc(0, 0, pos * 92 + 28, -arc + tau / 4, arc + tau / 4, 0)
+                #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
                 ctx.stroke()
+
             ctx.rotate(tau / 5)
         ctx.restore()
         
+        ctx.line_width = 2
+
         ctx.save()
         ctx.scale(0.42, 0.42)
-        wiggle = math.cos(((self.time / self.data.period / 4) % 1) * tau) * 0.1
+        self.time -= DELAY
+        wiggle = math.cos(((self.time / self.data.period / 2) % 1) * tau) * 0.1
         self.flower.rot = tau / 5 / 2 + wiggle
+        ctx.rgb(0.945, 0.631, 0.769)
         self.flower.draw(ctx)
         ctx.restore()
         
         ctx.gray(0.3 * (1.0 - ((((self.time / self.data.period) % 1)**2) * 0.75) if self.started else 0.0))
         ctx.arc(0, 0, 10, 0, tau, 0)
         ctx.fill()
+        self.time += DELAY
         
         ctx.save()
         ctx.gray(0.5)
-        ctx.rectangle(-10, -10, 20, 20)
+        ctx.rectangle(-8, -8, 15, 15)
         ctx.clip()
-        ctx.scale(0.125, 0.125 * 0.5)
+        ctx.scale(0.125, 0.125 * 0.3)
         ctx.rotate(wiggle)
         if self.started:
             ctx.scope()
@@ -94,9 +147,18 @@ class SongView(BaseView):
             ctx.line_to(-120, 0)
             ctx.fill()
         ctx.restore()
+        
+        if self.demo_mode:
+            ctx.gray(0.8)
+            ctx.font = "Camp Font 2"
+            ctx.font_size = 30
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.move_to (0, 40)
+            ctx.text("DEMO")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        self.input.think(ins, delta_ms)
+        super().think(ins, delta_ms)
         media.think(delta_ms)
         if self.input.buttons.os.middle.pressed:
             self.vm.pop(ViewTransitionSwipeRight())
@@ -110,26 +172,43 @@ class SongView(BaseView):
             media.load(self.song.dirName + '/song.mp3')
             #self.time = 0
 
+        if self.input.buttons.app.middle.pressed:
+            self.demo_mode = not self.demo_mode
+
         earlyMargin       = 60000.0 / self.data.bpm / 3.5
         lateMargin        = 60000.0 / self.data.bpm / 3.5
 
         notes = set()
+        notes_in_margin = set()
         self.events = self.data.tracks[self.difficulty.id].getEvents(self.time - self.data.period * 2, self.time + self.data.period * 4)
         for time, event in self.events:
             if isinstance(event, midireader.Note):
                 if time <= self.time <= time + event.length:
                     notes.add(event.number)
+                if time - earlyMargin <= self.time <= time + lateMargin:
+                    notes_in_margin.add(event.number)
 
         if not self.started:
             return
 
         leds.set_all_rgb(0, 0, 0)
 
-        for petal in notes:
-            utils.petal_leds(petal, 1.0)
+        for petal in range(5):
+            p = 4 if petal == 0 else petal - 1
+            pressed = ins.captouch.petals[p*2].pressed
+            active = self.petals[petal]
+            utils.petal_leds(petal, 1.0 if pressed and active else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0)))
+
+            if not pressed:
+                self.petals[petal] = False
+
+            if self.input.captouch.petals[p*2].whole.pressed:
+                if petal not in notes_in_margin:
+                    utils.play_fiba(self.app)
+                else:
+                    self.petals[petal] = True
 
         leds.update()
-
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
@@ -137,8 +216,12 @@ class SongView(BaseView):
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
         media.load(self.app.path + '/start.mp3')
+        self.app.blm.volume = 10000
+        #gc.disable()
 
     def on_exit(self):
         sys_display.set_mode(0)
         super().on_exit()
+        self.app.blm.volume = 14000
         self.app.out_sound.signals.trigger.start()
+        #gc.enable()

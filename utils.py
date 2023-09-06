@@ -1,5 +1,6 @@
 from st3m.ui.colours import *
 import leds
+import random
 
 dim = lambda x, y: tuple(map(lambda x: x * y, x))
 
@@ -28,3 +29,13 @@ def petal_leds(petal, val):
         if led < 0:
             led += 40
         leds.set_rgb(led, *color)
+
+def play_crunch(app):
+    if not app.crunch_sound:
+        return
+    app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
+
+def play_fiba(app):
+    if not app.fiba_sound:
+        return
+    app.fiba_sound[random.randint(0, 5)].signals.trigger.start()

@@ -175,7 +175,7 @@ class SelectView(BaseView):
         ctx.text("/sd/PetalHero")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        self.input.think(ins, delta_ms)
+        super().think(ins, delta_ms)
         self._sc.think(ins, delta_ms)
         if not self.to_process and not self.processing_now:
           media.think(delta_ms)
@@ -189,11 +189,11 @@ class SelectView(BaseView):
         if self.input.buttons.app.left.pressed:
             self._sc.scroll_left()
             self._scroll_pos = 0.0
-            self.app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
+            utils.play_crunch(self.app)
         elif self.input.buttons.app.right.pressed:
             self._sc.scroll_right()
             self._scroll_pos = 0.0
-            self.app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
+            utils.play_crunch(self.app)
 
         pos = self._sc.target_position()
         if pos < 0: pos = 0
