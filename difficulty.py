@@ -115,8 +115,8 @@ class DifficultyView(BaseView):
             utils.play_crunch(self.app)
             
         if self.input.buttons.app.middle.pressed:
-            self.app.in_sound.signals.trigger.start()
+            utils.play_go(self.app)
             self.vm.replace(loading.LoadingView(self.app, self.song, self.song.difficulties[self._sc.target_position()]), ViewTransitionBlend())
             
         if self.input.buttons.os.middle.pressed:
-            self.app.out_sound.signals.trigger.start()
+            utils.play_back(self.app)

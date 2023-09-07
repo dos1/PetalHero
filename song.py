@@ -31,10 +31,11 @@ class SongView(BaseView):
         self.events = []
         self.petals = [False] * 5
         self.demo_mode = False
+        self.fps = False
+        self.debug = False
 
     def draw(self, ctx: Context) -> None:
-        # Paint the background black
-        if self.delay < 1000:
+        if self.delay < 1750:
             sys_display.set_mode(2)
             
         ctx.compositing_mode = ctx.COPY
@@ -44,15 +45,15 @@ class SongView(BaseView):
                 
         ctx.gray(0.25)
         
-        self.time -= DELAY
+        self.time += DELAY
         for i in range(0, 2):
-            ctx.gray(0.30 - i/5*(1-(self.time/2 / self.data.period) % 1) * 0.15)
-            ctx.line_width = 2 + i/5*(1-(self.time/2 / self.data.period) % 1) * 2
+            ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
+            ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
             pos = 23*2 * (i+1-(self.time/2 / self.data.period) % 1)
             if pos > 0:
               ctx.arc(0, 0, 28 + pos, 0, tau, 0)
               ctx.stroke()
-        self.time += DELAY
+        self.time -= DELAY
         
         ctx.line_width = 2
 
@@ -65,8 +66,8 @@ class SongView(BaseView):
         for i in range(5):
             ctx.move_to(0, 0)
             ctx.line_to(0, -120)
-            ctx.stroke()
             ctx.rotate(tau / 5)
+        ctx.stroke()
         ctx.restore()
         
         ctx.save()
@@ -85,7 +86,7 @@ class SongView(BaseView):
                 if self.demo_mode:
                     time -= DELAY
                 if (self.petals[i] or self.demo_mode) and time < self.time and time + length > self.time:
-                    length -= self.time - time
+                    length -= self.time - time + DELAY
                     time = self.time
                     orig_time = time
                     during = True
@@ -111,7 +112,7 @@ class SongView(BaseView):
                 if pos >= 0:
                     ctx.arc(0, 0, pos * 92 + 28, -arc + tau / 4, arc + tau / 4, 0)
                 #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
-                ctx.stroke()
+                    ctx.stroke()
 
             ctx.rotate(tau / 5)
         ctx.restore()
@@ -120,7 +121,7 @@ class SongView(BaseView):
 
         ctx.save()
         ctx.scale(0.42, 0.42)
-        self.time -= DELAY
+        self.time += DELAY
         wiggle = math.cos(((self.time / self.data.period / 2) % 1) * tau) * 0.1
         self.flower.rot = tau / 5 / 2 + wiggle
         ctx.rgb(0.945, 0.631, 0.769)
@@ -130,7 +131,7 @@ class SongView(BaseView):
         ctx.gray(0.3 * (1.0 - ((((self.time / self.data.period) % 1)**2) * 0.75) if self.started else 0.0))
         ctx.arc(0, 0, 10, 0, tau, 0)
         ctx.fill()
-        self.time += DELAY
+        self.time -= DELAY
         
         ctx.save()
         ctx.gray(0.5)
@@ -148,14 +149,21 @@ class SongView(BaseView):
             ctx.fill()
         ctx.restore()
         
+        ctx.gray(0.8)
+        ctx.text_align = ctx.CENTER
+        ctx.text_baseline = ctx.MIDDLE
+
         if self.demo_mode:
-            ctx.gray(0.8)
             ctx.font = "Camp Font 2"
             ctx.font_size = 30
-            ctx.text_align = ctx.CENTER
-            ctx.text_baseline = ctx.MIDDLE
             ctx.move_to (0, 40)
             ctx.text("DEMO")
+            
+        if self.fps:
+            ctx.font = "Camp Font 3"
+            ctx.font_size = 16
+            ctx.move_to(0, 105)
+            ctx.text(f"{sys_display.fps():.2f}")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
@@ -174,6 +182,12 @@ class SongView(BaseView):
 
         if self.input.buttons.app.middle.pressed:
             self.demo_mode = not self.demo_mode
+
+        if self.input.buttons.app.left.pressed:
+            self.fps = not self.fps
+
+        if self.input.buttons.app.right.pressed:
+            self.debug = not self.debug
 
         earlyMargin       = 60000.0 / self.data.bpm / 3.5
         lateMargin        = 60000.0 / self.data.bpm / 3.5
@@ -197,7 +211,9 @@ class SongView(BaseView):
             p = 4 if petal == 0 else petal - 1
             pressed = ins.captouch.petals[p*2].pressed
             active = self.petals[petal]
-            utils.petal_leds(petal, 1.0 if pressed and active else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0)))
+            d = 1.0 if pressed and active else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0))
+            if d:
+                utils.petal_leds(petal, d)
 
             if not pressed:
                 self.petals[petal] = False
@@ -223,5 +239,5 @@ class SongView(BaseView):
         sys_display.set_mode(0)
         super().on_exit()
         self.app.blm.volume = 14000
-        self.app.out_sound.signals.trigger.start()
+        utils.play_back(self.app)
         #gc.enable()

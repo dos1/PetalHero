@@ -68,6 +68,8 @@ class SelectView(BaseView):
         self.processing_now = None
         self._sc.set_item_count(len(self.songs))
         self._scroll_pos = 0
+        self.process_delay = 250
+        self.pos = -1
 
     def draw(self, ctx: Context) -> None:
         
@@ -86,7 +88,8 @@ class SelectView(BaseView):
             self.processing_now = None
             
         if self.to_process:
-            self.processing_now = self.to_process.pop()
+            if self.process_delay <= 0:
+                self.processing_now = self.to_process.pop()
 
             utils.fire_gradient(ctx)
             
@@ -177,8 +180,10 @@ class SelectView(BaseView):
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
         self._sc.think(ins, delta_ms)
+        if self.process_delay > 0:
+            self.process_delay -= delta_ms
         if not self.to_process and not self.processing_now:
-          media.think(delta_ms)
+            media.think(delta_ms)
         self.flower.think(delta_ms)
         self._scroll_pos += delta_ms / 1000
 
@@ -203,19 +208,18 @@ class SelectView(BaseView):
             media.load(self.songs[pos].dirName + "/song.mp3")
             
         if self.input.buttons.app.middle.pressed:
-            self.app.in_sound.signals.trigger.start()
+            utils.play_go(self.app)
             if self.songs:
                 self.vm.push(difficulty.DifficultyView(self.app, self.songs[pos]), ViewTransitionSwipeLeft())
             
         if self.input.buttons.os.middle.pressed:
-            self.app.out_sound.signals.trigger.start()
+            utils.play_back(self.app)
 
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
-        #self._vm = vm
-        # Ignore the button which brought us here until it is released
-        #self.input._ignore_pressed()
+
+    def play(self):
         if self.songs:
             media.load(self.songs[self._sc.target_position()].dirName + "/song.mp3")
 

@@ -29,6 +29,7 @@ class PetalHero(Application):
         self.loaded = False
         self.blm = None
         self.fiba_sound = None
+        self.select = select.SelectView(self.app)
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
 
@@ -123,11 +124,12 @@ class PetalHero(Application):
             self.repeats += 1
 
         if self.input.buttons.app.middle.pressed:
-            self.app.in_sound.signals.trigger.start()
-            self.vm.push(select.SelectView(self.app), ViewTransitionSwipeLeft())
+            utils.play_go(self.app)
+            self.vm.push(self.select, ViewTransitionSwipeLeft())
+            self.select.play()
 
         if self.input.buttons.os.middle.pressed:
-            self.app.out_sound.signals.trigger.start()
+            utils.play_back(self.app)
             self.unload()
 
         if self.exiting:

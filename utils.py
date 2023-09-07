@@ -21,8 +21,10 @@ def fire_gradient(ctx):
 
 PETAL_COLORS = [GO_GREEN, RED, (1.0, 0.69, 0.0), BLUE, PUSH_RED]
 
-def petal_leds(petal, val):
-    color = dim(PETAL_COLORS[petal], val)
+def petal_leds(petal, val, color = None):
+    if not color:
+        color = PETAL_COLORS[petal]
+    color = dim(color, val)
     start = -11 + petal * 8
     for i in range(start, start + 7):
         led = i
@@ -39,3 +41,9 @@ def play_fiba(app):
     if not app.fiba_sound:
         return
     app.fiba_sound[random.randint(0, 5)].signals.trigger.start()
+
+def play_go(app):
+    app.in_sound.signals.trigger.start()
+
+def play_back(app):
+    app.out_sound.signals.trigger.start()
