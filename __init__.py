@@ -40,15 +40,15 @@ class PetalHero(Application):
         self.blm = bl00mbox.Channel("Petal Hero")
         self.blm.volume = 14000
 
-        self.app.in_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/in.wav")
+        self.app.in_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/sounds/in.wav")
         self.app.in_sound.signals.output = self.blm.mixer
 
-        self.app.out_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/out.wav")
+        self.app.out_sound = self.blm.new(bl00mbox.patches.sampler, self.path + "/sounds/out.wav")
         self.app.out_sound.signals.output = self.blm.mixer
 
         self.app.crunch_sound = []
         for i in range(3):
-            self.app.crunch_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/crunch" + str(i+1) + ".wav"))
+            self.app.crunch_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/sounds/crunch" + str(i+1) + ".wav"))
             self.app.crunch_sound[i].signals.output = self.blm.mixer
 
         self.loaded = True
@@ -59,7 +59,7 @@ class PetalHero(Application):
 
         self.app.fiba_sound = []
         for i in range(6):
-            self.app.fiba_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/fiba" + str(i+1) + ".wav"))
+            self.app.fiba_sound.append(self.blm.new(bl00mbox.patches.sampler, self.path + "/sounds/fiba" + str(i+1) + ".wav"))
             self.app.fiba_sound[i].signals.output = self.blm.mixer
 
     def draw(self, ctx: Context):
@@ -120,7 +120,7 @@ class PetalHero(Application):
         #print(media.get_position(), media.get_duration(), media.get_time())
           
         if self.time // 18 > self.repeats and self.repeats >= 0:
-            media.load(self.path + '/menu.mp3')
+            media.load(self.path + '/sounds/menu.mp3')
             self.repeats += 1
 
         if self.input.buttons.app.middle.pressed:
@@ -150,7 +150,7 @@ class PetalHero(Application):
         #self._vm = vm
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
-        media.load(self.path + '/menu.mp3')
+        media.load(self.path + '/sounds/menu.mp3')
         self.repeats = 0
         self.time = -1
         self.exiting = False

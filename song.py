@@ -273,7 +273,7 @@ class SongView(BaseView):
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
         if self.app:
-            media.load(self.app.path + '/start.mp3')
+            media.load(self.app.path + '/sounds/start.mp3')
             self.app.blm.volume = 10000
         #gc.disable()
 
