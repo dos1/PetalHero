@@ -78,7 +78,7 @@ class Track:
       if len(self.events) < t + 1:
         n = t + 1 - len(self.events)
         n *= 8
-        self.events = self.events + [[] for n in range(n)]
+        self.events.extend([[] for n in range(n)])
       self.events[t].append((time - (t * self.granularity), event))
     self.allEvents.append((time, event))
 
@@ -181,7 +181,7 @@ class Track:
         currentTicks = ticks
 
 class MidiReader(midi.MidiOutStream.MidiOutStream):
-  def __init__(self, song):
+  def __init__(self, song, difficulty):
     super().__init__()
     self.song = song
     self.bpm = 0
@@ -189,18 +189,22 @@ class MidiReader(midi.MidiOutStream.MidiOutStream):
     self.velocity  = {}
     self.ticksPerBeat = 480
     self.tempoMarkers = []
-    self.tracks        = [Track() for t in range(len(difficulties))]
+    #self.tracks        = [Track() for t in range(len(difficulties))]
+    self.difficulty = difficulty
+    self.track = Track()
 
   def addEvent(self, track, event, time = None):
     if time is None:
       time = self.abs_time()
     assert time >= 0
     #print('addEvent', track, event, time)
-    if track is None:
-      for t in self.tracks:
-        t.addEvent(time, event)
-    elif track < len(self.tracks):
-      self.tracks[track].addEvent(time, event)
+    if track is None or track == self.difficulty.id:
+      self.track.addEvent(time, event)
+    #if track is None:
+    #  for t in self.tracks:
+    #    t.addEvent(time, event)
+    #elif track < len(self.tracks):
+    #  self.tracks[track].addEvent(time, event)
 
   def abs_time(self):
     def ticksToBeats(ticks, bpm):

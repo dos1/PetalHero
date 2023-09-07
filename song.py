@@ -28,11 +28,11 @@ class SongView(BaseView):
         if self.app:
             self.app.load_fiba()
         if self.song:
-            self.data = midireader.MidiReader(self.song)
+            self.data = midireader.MidiReader(self.song, self.difficulty)
             midiIn = midi.MidiInFile(self.data, self.song.dirName + '/notes.mid')
             midiIn.read()
         else:
-            self.data = midireader.MidiReader(None)
+            self.data = midireader.MidiReader(None, None)
             self.data.period = 500
             self.data.bpm = 120
         self.delay = 2000
@@ -46,7 +46,7 @@ class SongView(BaseView):
         self.debug = False
 
     def draw(self, ctx: Context) -> None:
-        if self.delay < 1750:
+        if self.delay < 1500:
             sys_display.set_mode(2)
             
         ctx.compositing_mode = ctx.COPY
@@ -214,7 +214,7 @@ class SongView(BaseView):
             delta_ms = 56
         #if self.started:
         self.time += delta_ms
-        if self.delay < 50 and not self.started:
+        if self.delay < 25 and not self.started:
             self.started = True
             if self.song:
                 media.load(self.song.dirName + '/song.mp3')
@@ -235,7 +235,7 @@ class SongView(BaseView):
         notes = set()
         notes_in_margin = set()
         if self.app:
-            self.events = self.data.tracks[self.difficulty.id].getEvents(self.time - self.data.period * 2, self.time + self.data.period * 4)
+            self.events = self.data.track.getEvents(self.time - self.data.period * 2, self.time + self.data.period * 4)
         for time, event in self.events:
             if isinstance(event, midireader.Note):
                 if time <= self.time <= time + event.length:
