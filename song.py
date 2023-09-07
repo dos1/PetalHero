@@ -47,7 +47,10 @@ class SongView(BaseView):
 
     def draw(self, ctx: Context) -> None:
         if self.delay < 1500:
-            sys_display.set_mode(2)
+            mode = sys_display.get_mode()
+            if mode == 0:
+                mode = 16
+            sys_display.set_mode(mode | 512)
             
         ctx.compositing_mode = ctx.COPY
         DELAY = 90

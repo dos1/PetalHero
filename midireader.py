@@ -78,7 +78,7 @@ class Track:
       if len(self.events) < t + 1:
         n = t + 1 - len(self.events)
         n *= 8
-        self.events.extend([[] for n in range(n)])
+        self.events = self.events + [[] for n in range(n)]
       self.events[t].append((time - (t * self.granularity), event))
     self.allEvents.append((time, event))
 
