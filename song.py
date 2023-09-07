@@ -3,11 +3,16 @@ from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight
 from st3m.application import Application, ApplicationContext
 from st3m.ui.colours import *
 from st3m.utils import tau
+import st3m.run
 import math
 import media
 import leds
 import sys_display
 import gc
+
+if __name__ == '__main__':
+    import sys
+    sys.path.append('/flash/apps/PetalHero')
 
 import midi
 import midireader
@@ -20,10 +25,16 @@ class SongView(BaseView):
         self.app = app
         self.song = song
         self.difficulty = difficulty
-        self.app.load_fiba()
-        self.data = midireader.MidiReader(self.song)
-        midiIn = midi.MidiInFile(self.data, self.song.dirName + '/notes.mid')
-        midiIn.read()
+        if self.app:
+            self.app.load_fiba()
+        if self.song:
+            self.data = midireader.MidiReader(self.song)
+            midiIn = midi.MidiInFile(self.data, self.song.dirName + '/notes.mid')
+            midiIn.read()
+        else:
+            self.data = midireader.MidiReader(None)
+            self.data.period = 500
+            self.data.bpm = 120
         self.delay = 2000
         self.started = False
         self.time = -self.delay
@@ -39,35 +50,59 @@ class SongView(BaseView):
             sys_display.set_mode(2)
             
         ctx.compositing_mode = ctx.COPY
-        DELAY = 100
+        DELAY = 90
 
-        ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
+        self.time += DELAY
+        
+        other = int(self.time / 2 / self.data.period) % 2
+        if self.time < 0:
+            other = not other
+
+        ctx.gray(0.1 if other else 0.0)
+        ctx.rectangle(-120, -120, 240, 240)
+        ctx.fill()
                 
         ctx.gray(0.25)
         
-        self.time += DELAY
-        for i in range(0, 2):
-            ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
-            ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
+        for i in [1, 0]:
+            #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
+            #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
+            ctx.gray(0.1 if other ^ (i == 1) else 0.0)
             pos = 23*2 * (i+1-(self.time/2 / self.data.period) % 1)
             if pos > 0:
-              ctx.arc(0, 0, 28 + pos, 0, tau, 0)
-              ctx.stroke()
+                ctx.begin_path()
+                if self.debug:
+                    utils.circle(ctx, 0, 0, 28 + pos)
+                else:
+                    ctx.arc(0, 0, 28 + pos, 0, tau, 0)
+                    ctx.fill()
         self.time -= DELAY
         
         ctx.line_width = 2
 
         ctx.save()
-        ctx.gray(1.0)
-        ctx.arc(0, 0, 28, 0, tau, 0)
-        ctx.stroke()
-        ctx.gray(0.5)
+        ctx.gray(0.42)
         ctx.rotate(tau / 5 / 2)
+        ctx.begin_path()
         for i in range(5):
             ctx.move_to(0, 0)
             ctx.line_to(0, -120)
             ctx.rotate(tau / 5)
         ctx.stroke()
+
+        ctx.line_width = 3
+
+        ctx.begin_path()
+        if not self.debug:
+            ctx.gray(0.0)
+            ctx.arc(0, 0, 28, 0, tau, 0)
+            ctx.fill()
+            ctx.gray(0.69)
+            ctx.arc(0, 0, 28, 0, tau, 0)
+            ctx.stroke()
+        else:
+            ctx.gray(1.0)
+            utils.circle(ctx, 0, 0, 28)
         ctx.restore()
         
         ctx.save()
@@ -79,6 +114,8 @@ class SongView(BaseView):
                 if not isinstance(event, midireader.Note): continue
                 if not start >= time >= stop and not start >= (time + event.length) >= stop and not time <= stop <= (time + event.length): continue
                 if not event.number == i: continue
+
+                ctx.begin_path()
 
                 length = event.length
                 during = False
@@ -98,20 +135,25 @@ class SongView(BaseView):
                     
                 ctx.line_width = 6
                 ctx.line_cap = ctx.NONE
-                if event.length > 120:
-                    d = 0.75 if orig_time >= self.time else 0.25
+                if event.length > 120 or (orig_time < self.time and not during):
+                    d = 0.75 if orig_time >= self.time else 0.33
                     if during: d = 1.0
                     ctx.rgb(*utils.dim(utils.PETAL_COLORS[i], d))
-                    ctx.move_to(0, max(0, - (stop - time) / (start - stop) * 92 + 28))
-                    ctx.line_to(0, max(0, - (stop - (time + length)) / (start - stop) * 92 + 28))
-                    ctx.stroke()
+                    pos1 = max(0, - (stop - time) / (start - stop) * 92 + 28)
+                    pos2 = max(0, - (stop - (time + length)) / (start - stop) * 92 + 28)
+                    ctx.rectangle(-3, pos1, 6, pos2-pos1)
+                    ctx.fill()
+                    #ctx.move_to(0, max(0, - (stop - time) / (start - stop) * 92 + 28))
+                    #ctx.line_to(0, max(0, - (stop - (time + length)) / (start - stop) * 92 + 28))
+                    #ctx.stroke()
                 
                 ctx.rgb(*utils.PETAL_COLORS[i])
                 pos = - (stop - time) / (start - stop)
                 ctx.line_width = 3 + 3 * pos
-                if pos >= 0:
+                
+                if pos >= 0: # and not self.debug:
                     ctx.arc(0, 0, pos * 92 + 28, -arc + tau / 4, arc + tau / 4, 0)
-                #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
+                    #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
                     ctx.stroke()
 
             ctx.rotate(tau / 5)
@@ -129,21 +171,18 @@ class SongView(BaseView):
         ctx.restore()
         
         ctx.gray(0.3 * (1.0 - ((((self.time / self.data.period) % 1)**2) * 0.75) if self.started else 0.0))
+        ctx.begin_path()
         ctx.arc(0, 0, 10, 0, tau, 0)
         ctx.fill()
         self.time -= DELAY
         
         ctx.save()
         ctx.gray(0.5)
-        ctx.rectangle(-8, -8, 15, 15)
-        ctx.clip()
-        ctx.scale(0.125, 0.125 * 0.3)
-        ctx.rotate(wiggle)
+        ctx.scale(0.0625, 0.125 * 0.3)
+        ctx.begin_path()
+        #ctx.rotate(wiggle)
         if self.started:
             ctx.scope()
-            #ctx.line_to(10, -10)
-            #ctx.line_to(-10, -10)
-            #ctx.line_to(-10, 0)
             ctx.line_to(120, 0)
             ctx.line_to(-120, 0)
             ctx.fill()
@@ -172,12 +211,13 @@ class SongView(BaseView):
             self.vm.pop(ViewTransitionSwipeRight())
         self.delay -= delta_ms
         if delta_ms > 80:
-            delta_ms = 60
+            delta_ms = 56
         #if self.started:
         self.time += delta_ms
-        if self.delay < 0 and not self.started:
+        if self.delay < 50 and not self.started:
             self.started = True
-            media.load(self.song.dirName + '/song.mp3')
+            if self.song:
+                media.load(self.song.dirName + '/song.mp3')
             #self.time = 0
 
         if self.input.buttons.app.middle.pressed:
@@ -194,7 +234,8 @@ class SongView(BaseView):
 
         notes = set()
         notes_in_margin = set()
-        self.events = self.data.tracks[self.difficulty.id].getEvents(self.time - self.data.period * 2, self.time + self.data.period * 4)
+        if self.app:
+            self.events = self.data.tracks[self.difficulty.id].getEvents(self.time - self.data.period * 2, self.time + self.data.period * 4)
         for time, event in self.events:
             if isinstance(event, midireader.Note):
                 if time <= self.time <= time + event.length:
@@ -231,13 +272,21 @@ class SongView(BaseView):
         #self._vm = vm
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
-        media.load(self.app.path + '/start.mp3')
-        self.app.blm.volume = 10000
+        if self.app:
+            media.load(self.app.path + '/start.mp3')
+            self.app.blm.volume = 10000
         #gc.disable()
 
     def on_exit(self):
         sys_display.set_mode(0)
         super().on_exit()
-        self.app.blm.volume = 14000
-        utils.play_back(self.app)
+        if self.app:
+            self.app.blm.volume = 14000
+            utils.play_back(self.app)
         #gc.enable()
+
+if __name__ == '__main__':
+    media.stop()
+    view = SongView(None, None, None)
+    view.fps = True
+    st3m.run.run_view(view)

@@ -10,6 +10,7 @@ class Flower:
         ctx.save()
         ctx.rotate(self.rot)
         ctx.translate(-74, -74)
+        ctx.begin_path()
         ctx.move_to(76.221727, 3.9788409).curve_to(
             94.027758, 31.627675, 91.038918, 37.561293, 94.653428, 48.340473
         ).rel_curve_to(

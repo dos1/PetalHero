@@ -33,17 +33,31 @@ def petal_leds(petal, val, color = None):
         leds.set_rgb(led, *color)
 
 def play_crunch(app):
+    if not app: return
     if not app.crunch_sound:
         return
     app.crunch_sound[random.randint(0, 2)].signals.trigger.start()
 
 def play_fiba(app):
+    if not app: return
     if not app.fiba_sound:
         return
     app.fiba_sound[random.randint(0, 5)].signals.trigger.start()
 
 def play_go(app):
+    if not app: return
     app.in_sound.signals.trigger.start()
 
 def play_back(app):
+    if not app: return
     app.out_sound.signals.trigger.start()
+
+def circle(ctx, x, y, r):
+    c = 0.55191502449
+    ctx.begin_path()
+    ctx.move_to(x - r, y);
+    ctx.curve_to(x - r, y - (c * r), x - (c * r), y - r, x, y - r)
+    ctx.curve_to(x + (c * r), y - r, x + r, y - (c * r), x + r, y)
+    ctx.curve_to(x + r, y + (c * r), x + (c * r), y + r, x, y + r)
+    ctx.curve_to(x - (c * r), y + r, x - r, y + (c * r), x - r, y)
+    ctx.stroke()
