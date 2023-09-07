@@ -181,10 +181,12 @@ class SongView(BaseView):
         
         ctx.save()
         ctx.gray(0.5)
-        ctx.scale(0.0625, 0.125 * 0.3)
-        ctx.begin_path()
         #ctx.rotate(wiggle)
         if self.started:
+            ctx.rectangle(-8, -8, 15, 15)
+            ctx.clip() # for firmwares that stroke the scope...
+            ctx.scale(0.0625, 0.125 * 0.3)
+            ctx.begin_path()
             ctx.scope()
             ctx.line_to(120, 0)
             ctx.line_to(-120, 0)
