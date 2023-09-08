@@ -38,29 +38,30 @@ for basenote, diff in baseNotes.items():
 reverseNoteMap = dict([(v, k) for k, v in list(noteMap.items())])
 
 class Event:
-  __slots__ = ("length",)
+  __slots__ = ("length", "time")
 
-  def __init__(self, length):
+  def __init__(self, time, length):
     self.length = length
+    self.time = time
 
 class Note(Event):
-  __slots__ = ("number", "played", "special", "tappable",)
+  __slots__ = ("number", "played", "missed", "special")
 
-  def __init__(self, number, length, special = False, tappable = False):
-    super().__init__(length)
+  def __init__(self, time, number, length, special = False):
+    super().__init__(time, length)
     self.number   = number
     self.played   = False
+    self.missed   = False
     self.special  = special
-    self.tappable = tappable
-    
+
   def __repr__(self):
-    return "<Note #%d length: %d>" % (self.number, self.length)
+    return "<Note #%d time: %d length: %d>" % (self.number, self.time, self.length)
 
 class Tempo(Event):
   __slots__ = ("bpm",)
 
   def __init__(self, bpm):
-    super().__init__(0)
+    super().__init__(None, 0)
     self.bpm = bpm
 
   def __repr__(self):
@@ -71,24 +72,16 @@ class Track:
   
   def __init__(self):
     self.events = []
-    self.allEvents = []
+    self.allEvents = set()
 
   def addEvent(self, time, event):
     for t in range(int(time / self.granularity), int((time + event.length) / self.granularity) + 1):
       if len(self.events) < t + 1:
         n = t + 1 - len(self.events)
         n *= 8
-        self.events = self.events + [[] for n in range(n)]
-      self.events[t].append((time - (t * self.granularity), event))
-    self.allEvents.append((time, event))
-
-  def removeEvent(self, time, event):
-    for t in range(int(time / self.granularity), int((time + event.length) / self.granularity) + 1):
-      e = (time - (t * self.granularity), event)
-      if t < len(self.events) and e in self.events[t]:
-        self.events[t].remove(e)
-    if (time, event) in self.allEvents:
-      self.allEvents.remove((time, event))
+        self.events += [set() for n in range(n)]
+      self.events[t].add(event)
+    self.allEvents.add(event)
 
   def getEvents(self, startTime, endTime):
     t1, t2 = [int(x) for x in [startTime / self.granularity, endTime / self.granularity]]
@@ -97,9 +90,8 @@ class Track:
 
     events = set()
     for t in range(max(t1, 0), min(len(self.events), t2)):
-      for diff, event in self.events[t]:
-        time = (self.granularity * t) + diff
-        events.add((time, event))
+      for event in self.events[t]:
+        events.add(event)
     return events
 
   def getAllEvents(self):
@@ -107,78 +99,10 @@ class Track:
 
   def reset(self):
     for eventList in self.events:
-      for time, event in eventList:
+      for event in eventList:
         if isinstance(event, Note):
           event.played = False
-
-  def update(self):
-    # Determine which notes are tappable. The rules are:
-    #  1. Not the first note of the track
-    #  2. Previous note not the same as this one
-    #  3. Previous note not a chord
-    #  4. Previous note ends at most 161 ticks before this one
-    bpm             = None
-    ticksPerBeat    = 480
-    tickThreshold   = 161
-    prevNotes       = []
-    currentNotes    = []
-    currentTicks    = 0.0
-    prevTicks       = 0.0
-    epsilon         = 1e-3
-
-    def beatsToTicks(time):
-      return (time * bpm * ticksPerBeat) / 60000.0
-
-    if not self.allEvents:
-      return
-
-    for time, event in self.allEvents + [self.allEvents[-1]]:
-      if isinstance(event, Tempo):
-        bpm = event.bpm
-      elif isinstance(event, Note):
-        # All notes are initially not tappable
-        event.tappable = False
-        ticks = beatsToTicks(time)
-        
-        # Part of chord?
-        if ticks < currentTicks + epsilon:
-          currentNotes.append(event)
-          continue
-        
-        """
-        for i in range(5):
-          if i in [n.number for n in prevNotes]:
-            print " # ",
-          else:
-            print " . ",
-        print " | ",
-        for i in range(5):
-          if i in [n.number for n in currentNotes]:
-            print " # ",
-          else:
-            print " . ",
-        print
-        """
-
-        # Previous note not a chord?
-        if len(prevNotes) == 1:
-          # Previous note ended recently enough?
-          prevEndTicks = prevTicks + beatsToTicks(prevNotes[0].length)
-          if currentTicks - prevEndTicks <= tickThreshold:
-            for note in currentNotes:
-              # Are any current notes the same as the previous one?
-              if note.number == prevNotes[0].number:
-                break
-            else:
-              # If all the notes are different, mark the current notes tappable
-              for note in currentNotes:
-                note.tappable = True
-
-        # Set the current notes as the previous notes
-        prevNotes    = currentNotes
-        prevTicks    = currentTicks
-        currentNotes = [event]
-        currentTicks = ticks
+          event.missed = False
 
 class MidiReader(midi.MidiOutStream.MidiOutStream):
   def __init__(self, song, difficulty):
@@ -193,7 +117,8 @@ class MidiReader(midi.MidiOutStream.MidiOutStream):
     self.difficulty = difficulty
     self.track = Track()
 
-  def addEvent(self, track, event, time = None):
+  def addEvent(self, track, event):
+    time = event.time
     if time is None:
       time = self.abs_time()
     assert time >= 0
@@ -253,7 +178,7 @@ class MidiReader(midi.MidiOutStream.MidiOutStream):
       del self.heldNotes[(self.get_current_track(), channel, note)]
       if note in noteMap:
         track, number = noteMap[note]
-        self.addEvent(track, Note(number, endTime - startTime, special = self.velocity[note] == 127), time = startTime)
+        self.addEvent(track, Note(startTime, number, endTime - startTime, special = self.velocity[note] == 127))
       else:
         print("MIDI note 0x%x at %d does not map to any game note." % (note, self.abs_time()))
         pass

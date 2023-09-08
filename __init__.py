@@ -21,9 +21,7 @@ class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
         super().__init__(app_ctx)
         self.app = self
-        self.path = getattr(app_ctx, 'bundle_path', '/flash/apps/PetalHero')
-        if not self.path:
-            self.path = '/flash/apps/PetalHero'
+        self.path = app_ctx.bundle_path if app_ctx.bundle_path else '/flash/apps/PetalHero'
 
         self.flower = flower.Flower(0.00125)
         self.loaded = False

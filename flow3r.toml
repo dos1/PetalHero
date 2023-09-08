@@ -1,6 +1,7 @@
 [app]
 name = "Petal Hero"
 menu = "Music"
+wifi_preference = false
 
 [entry]
 class = "PetalHero"
