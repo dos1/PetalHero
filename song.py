@@ -19,8 +19,8 @@ import midireader
 import utils
 import flower
 
-AUDIO_DELAY = -80
-VIDEO_DELAY = 20 - AUDIO_DELAY
+AUDIO_DELAY = -70
+VIDEO_DELAY = 30 - AUDIO_DELAY
 RADIUS = 22
 
 class SongView(BaseView):
@@ -44,12 +44,16 @@ class SongView(BaseView):
         self.time = -self.delay
         self.flower = flower.Flower(0)
         self.events = []
-        self.petals = [False] * 5
+        self.petals = [None] * 5
         self.demo_mode = False
         self.fps = False
         self.debug = False
         self.successive_sames = 0
         self.finished = False
+        self.streak = 0
+        self.longeststreak = 0
+        self.exiting = False
+        self.led_override = [0] * 5
         
         self.good = 0.0
         self.bad = 0.0
@@ -68,7 +72,7 @@ class SongView(BaseView):
         if self.time < 0:
             other = not other
 
-        ctx.gray(0.1 if other else 0.0)
+        ctx.gray((0.1 if other else 0.0) + self.miss * 0.1)
         ctx.rectangle(-120, -120, 240, 240)
         ctx.fill()
                 
@@ -77,7 +81,7 @@ class SongView(BaseView):
         for i in [1, 0]:
             #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
             #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
-            ctx.gray(0.1 if other ^ (i == 1) else 0.0)
+            ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.1)
             pos = (120-RADIUS)/2 * (i+1-(self.time/2 / self.data.period) % 1)
             if pos > 0:
                 ctx.begin_path()
@@ -130,28 +134,24 @@ class SongView(BaseView):
                 if not event.number == i: continue
 
                 ctx.begin_path()
-                time = event.time
+                time = event.time - VIDEO_DELAY
 
                 length = event.length
                 during = False
                 arc = tau/20
-                if self.demo_mode:
-                    time -= VIDEO_DELAY
-                if (event.played and not event.missed) or self.demo_mode:
-                    length -= self.time - time + VIDEO_DELAY
+                if event.played or (self.demo_mode and event.time <= self.time + VIDEO_DELAY <= event.time + event.length):
+                    length -= self.time - event.time + VIDEO_DELAY
                     time = self.time
-                    orig_time = time
-                    during = True
-                    arc *= 1.5
-                else:
-                    orig_time = time
-                    if not self.demo_mode:
-                        time -= VIDEO_DELAY
+                    if length < 0:
+                        length = 0
+                    if not event.missed or self.demo_mode:
+                        during = True
+                        arc *= 1.5
                     
                 ctx.line_width = 6
                 ctx.line_cap = ctx.NONE
-                if event.length > 120 or (orig_time < self.time and not during):
-                    d = 0.75 if not event.missed else 0.33
+                if event.length > 120 or (event.missed and not self.demo_mode):
+                    d = 0.75 if not event.missed or event.played else 0.33
                     if during: d = 1.0
                     ctx.rgb(*utils.dim(utils.PETAL_COLORS[i], d))
                     pos1 = max(0, - (stop - time) / (start - stop) * (120 - RADIUS) + RADIUS)
@@ -166,7 +166,7 @@ class SongView(BaseView):
                 pos = - (stop - time) / (start - stop)
                 ctx.line_width = 3 + 3 * pos + during * 2
                 
-                if pos >= 0: # and not self.debug:
+                if pos >= 0 and (not event.missed or self.demo_mode): # and not self.debug:
                     ctx.arc(0, 0, pos * (120 - RADIUS) + RADIUS, -arc + tau / 4, arc + tau / 4, 0)
                     #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
                     ctx.stroke()
@@ -236,6 +236,10 @@ class SongView(BaseView):
 
         if self.input.buttons.os.middle.pressed:
             self.vm.pop(ViewTransitionSwipeRight())
+
+        if self.streak > self.longeststreak:
+            self.longeststreak = self.streak
+
         self.delay -= delta_ms
         self.time += delta_ms
 
@@ -277,10 +281,18 @@ class SongView(BaseView):
                     events_in_margin.add(event)
                 if event.time + lateMargin < self.time and not event.played and not event.missed:
                     event.missed = True
-                    self.missed[event.number] = 1.0
-                    self.miss = 1.0
+                    self.streak = 0
+                    if not self.demo_mode:
+                        self.missed[event.number] = 1.0
+                        self.miss = 1.0
+                if event.played and event.time + event.length - lateMargin > self.time:
+                    p = 4 if event.number == 0 else event.number - 1
+                    if not ins.captouch.petals[p*2].pressed:
+                        event.missed = True
+                        self.streak = 0
 
-        if not self.started:
+
+        if not self.started or self.exiting:
             return
 
         leds.set_all_rgb(0, 0, 0)
@@ -288,27 +300,33 @@ class SongView(BaseView):
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
             pressed = ins.captouch.petals[p*2].pressed
-            active = self.petals[petal]
-            d = 1.0 if pressed and active else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0))
-            if d:
-                utils.petal_leds(petal, d)
-
-            if not pressed:
-                self.petals[petal] = False
-
             events = set(filter(lambda x: x.number == petal, events_in_margin))
+
+            self.led_override[petal] = max(0, self.led_override[petal] - delta_ms)
 
             if self.input.captouch.petals[p*2].whole.pressed:
                 if not events:
                     utils.play_fiba(self.app)
                     self.bad = 1.0
+                    self.streak = 0
                 else:
-                    self.petals[petal] = True
                     for event in events:
                         #if not event.played:
                         #    print(self.time - event.time)
-                        event.played = True
+                        if not event.played:
+                            event.played = True
+                            self.led_override[petal] = 100
+                            self.streak += 1
+                            self.petals[petal] = event
                     self.good = 1.0
+
+            if not pressed:
+                self.petals[petal] = None
+
+            active = self.petals[petal] is not None
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0.069))
+            if d:
+                utils.petal_leds(petal, d)
 
         leds.update()
 
@@ -317,14 +335,20 @@ class SongView(BaseView):
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
             self.app.blm.volume = 10000
+        for i in range(5):
+            utils.petal_leds(i, 0.069)
+        leds.update()
         #gc.disable()
 
     def on_exit(self):
         sys_display.set_mode(0)
         super().on_exit()
+        self.exiting = True
         if self.app and not self.finished:
             self.app.blm.volume = 14000
             utils.play_back(self.app)
+        leds.set_all_rgb(0, 0, 0)
+        leds.update()
         #gc.enable()
 
 if __name__ == '__main__':
