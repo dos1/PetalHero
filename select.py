@@ -218,6 +218,9 @@ class SelectView(BaseView):
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
+        if self.app and self.app.after_score:
+            self.play()
+            self.app.after_score = False
 
     def play(self):
         if self.songs:

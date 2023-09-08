@@ -28,6 +28,7 @@ class PetalHero(Application):
         self.blm = None
         self.fiba_sound = None
         self.select = select.SelectView(self.app)
+        self.after_score = False
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
 

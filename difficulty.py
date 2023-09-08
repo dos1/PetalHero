@@ -99,7 +99,7 @@ class DifficultyView(BaseView):
         """
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        self.input.think(ins, delta_ms)
+        super().think(ins, delta_ms)
         self._sc.think(ins, delta_ms)
         media.think(delta_ms)
         self.flower.think(delta_ms)

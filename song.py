@@ -18,6 +18,7 @@ import midi
 import midireader
 import utils
 import flower
+import score
 
 AUDIO_DELAY = -70
 VIDEO_DELAY = 30 - AUDIO_DELAY
@@ -54,6 +55,7 @@ class SongView(BaseView):
         self.longeststreak = 0
         self.exiting = False
         self.led_override = [0] * 5
+        self.laststreak = -1
         
         self.good = 0.0
         self.bad = 0.0
@@ -230,9 +232,13 @@ class SongView(BaseView):
         else:
             self.successive_sames = 0
 
+        #if self.input.buttons.app.middle.pressed:
+        #    self.successive_sames = 1000
+
         if self.successive_sames > 250 and not self.finished:
             self.finished = True
-            self.vm.pop()
+            media.stop()
+            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak))
 
         if self.input.buttons.os.middle.pressed:
             self.vm.pop(ViewTransitionSwipeRight())
@@ -287,12 +293,11 @@ class SongView(BaseView):
                         self.miss = 1.0
                 if event.played and event.time + event.length - lateMargin > self.time:
                     p = 4 if event.number == 0 else event.number - 1
-                    if not ins.captouch.petals[p*2].pressed:
+                    if not ins.captouch.petals[p*2].pressed and not event.missed:
                         event.missed = True
-                        self.streak = 0
 
 
-        if not self.started or self.exiting:
+        if self.exiting:
             return
 
         leds.set_all_rgb(0, 0, 0)
@@ -316,7 +321,9 @@ class SongView(BaseView):
                         if not event.played:
                             event.played = True
                             self.led_override[petal] = 100
-                            self.streak += 1
+                            if event.time > self.laststreak:
+                                self.streak += 1
+                                self.laststreak = event.time
                             self.petals[petal] = event
                     self.good = 1.0
 
