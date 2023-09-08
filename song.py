@@ -1,5 +1,5 @@
 from st3m.input import InputController
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend
 from st3m.application import Application, ApplicationContext
 from st3m.ui.colours import *
 from st3m.utils import tau
@@ -56,6 +56,7 @@ class SongView(BaseView):
         self.exiting = False
         self.led_override = [0] * 5
         self.laststreak = -1
+        self.scoreview = None
         
         self.good = 0.0
         self.bad = 0.0
@@ -74,7 +75,7 @@ class SongView(BaseView):
         if self.time < 0:
             other = not other
 
-        ctx.gray((0.1 if other else 0.0) + self.miss * 0.1)
+        ctx.gray((0.1 if other else 0.0) + self.miss * 0.15)
         ctx.rectangle(-120, -120, 240, 240)
         ctx.fill()
                 
@@ -83,7 +84,7 @@ class SongView(BaseView):
         for i in [1, 0]:
             #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
             #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
-            ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.1)
+            ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.15)
             pos = (120-RADIUS)/2 * (i+1-(self.time/2 / self.data.period) % 1)
             if pos > 0:
                 ctx.begin_path()
@@ -235,10 +236,13 @@ class SongView(BaseView):
         #if self.input.buttons.app.middle.pressed:
         #    self.successive_sames = 1000
 
-        if self.successive_sames > 250 and not self.finished:
+        if self.successive_sames > 250 and not self.scoreview:
+            self.scoreview = score.ScoreView(self.app, self.data, self.longeststreak)
+
+        if self.successive_sames > 350 and not self.finished:
             self.finished = True
             media.stop()
-            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak))
+            self.vm.replace(self.scoreview, ViewTransitionBlend())
 
         if self.input.buttons.os.middle.pressed:
             self.vm.pop(ViewTransitionSwipeRight())
@@ -305,7 +309,7 @@ class SongView(BaseView):
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
             pressed = ins.captouch.petals[p*2].pressed
-            events = set(filter(lambda x: x.number == petal, events_in_margin))
+            events = set(filter(lambda x: x.number == petal and not x.played, events_in_margin))
 
             self.led_override[petal] = max(0, self.led_override[petal] - delta_ms)
 
@@ -315,16 +319,13 @@ class SongView(BaseView):
                     self.bad = 1.0
                     self.streak = 0
                 else:
-                    for event in events:
-                        #if not event.played:
-                        #    print(self.time - event.time)
-                        if not event.played:
-                            event.played = True
-                            self.led_override[petal] = 100
-                            if event.time > self.laststreak:
-                                self.streak += 1
-                                self.laststreak = event.time
-                            self.petals[petal] = event
+                    event = sorted(events, key = lambda x: x.time)[0]
+                    event.played = True
+                    self.led_override[petal] = 150
+                    if event.time > self.laststreak:
+                        self.streak += 1
+                        self.laststreak = event.time
+                    self.petals[petal] = event
                     self.good = 1.0
 
             if not pressed:

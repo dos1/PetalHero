@@ -1,5 +1,5 @@
 from st3m.input import InputController
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionSwipeRight
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionSwipeRight, ViewTransitionBlend
 from st3m.application import Application, ApplicationContext
 from st3m.ui.interactions import ScrollController
 import st3m.run
@@ -115,7 +115,7 @@ class ScoreView(BaseView):
                 media.load(self.app.path + "/sounds/" + taunt + ".mp3")
 
         if self.input.buttons.app.middle.pressed:
-            self.vm.pop(ViewTransitionSwipeRight())
+            self.vm.pop(ViewTransitionBlend())
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
