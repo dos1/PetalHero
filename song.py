@@ -17,8 +17,8 @@ import utils
 import flower
 import score
 
-AUDIO_DELAY = -70
-VIDEO_DELAY = 30 - AUDIO_DELAY
+AUDIO_DELAY = -90
+VIDEO_DELAY = 60 - AUDIO_DELAY
 RADIUS = 22
 
 class SongView(BaseView):
@@ -105,7 +105,7 @@ class SongView(BaseView):
 
         ctx.line_width = 3
 
-        if not self.debug:
+        if not self.debug or True:
             ctx.gray(0.69)
             ctx.arc(0, 0, RADIUS + 1.5, 0, tau, 0)
             ctx.fill()
@@ -323,6 +323,8 @@ class SongView(BaseView):
                     if event.time > self.laststreak:
                         self.streak += 1
                         self.laststreak = event.time
+                        if self.debug:
+                            print(self.time - event.time)
                     self.petals[petal] = event
                     self.good = 1.0
 
