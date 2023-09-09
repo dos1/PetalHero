@@ -1,10 +1,7 @@
-from st3m.input import InputController
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionBlend
-from st3m.application import Application, ApplicationContext
+from st3m.ui.view import BaseView, ViewTransitionBlend
 from st3m.ui.interactions import ScrollController
 import media
 import math
-import random
 
 import flower
 import loading

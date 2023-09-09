@@ -1,13 +1,10 @@
 import media, math
 from st3m.ui.colours import *
-from st3m.input import InputController
 from st3m.ui.view import ViewTransitionSwipeLeft
 from st3m.application import Application, ApplicationContext
 import st3m.run
 import leds
-import time
 import bl00mbox
-import sys_display
 
 # TODO: FIXME
 import sys

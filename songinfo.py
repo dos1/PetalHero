@@ -28,7 +28,7 @@ difficulties = {
 
 noteSet = set(midireader.noteMap.keys())
 
-class MidiInfoReader(midi.MidiOutStream.MidiOutStream):
+class MidiInfoReader(midi.MidiOutStream):
   __slots__ = ("notes", )
     
   # We exit via this exception so that we don't need to read the whole file in

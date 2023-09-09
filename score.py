@@ -1,7 +1,4 @@
-from st3m.input import InputController
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionSwipeRight, ViewTransitionBlend
-from st3m.application import Application, ApplicationContext
-from st3m.ui.interactions import ScrollController
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionBlend
 import st3m.run
 import media
 import math
@@ -13,7 +10,6 @@ if __name__ == '__main__':
     sys.path.append('/flash/apps/PetalHero')
 
 import flower
-import loading
 import utils
 import midireader
 
@@ -52,8 +48,6 @@ class ScoreView(BaseView):
         ctx.restore()
         
         ctx.save()
-
-        offset = 0
 
         ctx.font = "Camp Font 3"
         ctx.text_align = ctx.CENTER

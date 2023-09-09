@@ -104,7 +104,7 @@ class Track:
           event.played = False
           event.missed = False
 
-class MidiReader(midi.MidiOutStream.MidiOutStream):
+class MidiReader(midi.MidiOutStream):
   def __init__(self, song, difficulty):
     super().__init__()
     self.song = song
@@ -136,7 +136,7 @@ class MidiReader(midi.MidiOutStream.MidiOutStream):
       return (60000.0 * ticks) / (bpm * self.ticksPerBeat)
 
     if self.bpm:
-      currentTime = midi.MidiOutStream.MidiOutStream.abs_time(self)
+      currentTime = midi.MidiOutStream.abs_time(self)
 
       # Find out the current scaled time.
       # Yeah, this is reeally slow, but fast enough :)
@@ -157,7 +157,7 @@ class MidiReader(midi.MidiOutStream.MidiOutStream):
     
   def tempo(self, value):
     bpm = 60.0 * 10.0**6 / value
-    self.tempoMarkers.append((midi.MidiOutStream.MidiOutStream.abs_time(self), bpm))
+    self.tempoMarkers.append((midi.MidiOutStream.abs_time(self), bpm))
     if not self.bpm:
       self.bpm = bpm
       self.period = 60000.0 / self.bpm

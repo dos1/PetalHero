@@ -1,6 +1,4 @@
-from st3m.input import InputController
 from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend
-from st3m.application import Application, ApplicationContext
 from st3m.ui.colours import *
 from st3m.utils import tau
 import st3m.run
@@ -8,7 +6,6 @@ import math
 import media
 import leds
 import sys_display
-import gc
 
 if __name__ == '__main__':
     import sys
