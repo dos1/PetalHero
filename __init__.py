@@ -114,10 +114,6 @@ class PetalHero(Application):
         else:
             self.time += delta_ms / 1000
 
-        if media.get_time() >= 17.92 or media.get_position() == media.get_duration():
-            #media.seek(0)
-            media.load(self.path + '/sounds/menu.mp3')
-
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
@@ -129,6 +125,10 @@ class PetalHero(Application):
 
         if self.exiting:
             return
+
+        if media.get_time() >= 17.92 or media.get_position() == media.get_duration():
+            #media.seek(0)
+            media.load(self.path + '/sounds/menu.mp3')
 
         #leds.set_brightness(32 - int(math.cos(self.time) * 32))
         leds.set_all_rgb(0, 0, 0)

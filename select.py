@@ -220,6 +220,8 @@ class SelectView(BaseView):
     def play(self):
         if self.songs:
             media.load(self.songs[self._sc.target_position()].dirName + "/song.mp3")
+        else:
+            media.stop()
 
     def on_exit(self):
         super().on_exit()
