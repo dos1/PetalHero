@@ -13,8 +13,11 @@ def background(ctx):
     ctx.rectangle(-120, -120, 240, 240)
     ctx.fill()
 
-def clear(ctx, color = (0, 0, 0)):
-    ctx.rgb(color)
+def clear(ctx, color = 0):
+    if type(color) in (float, int):
+        ctx.gray(color)
+    else:
+        ctx.rgb(*color)
     ctx.rectangle(-120, -120, 240, 240)
     ctx.fill()
 
