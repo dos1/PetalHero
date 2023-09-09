@@ -114,13 +114,9 @@ class PetalHero(Application):
         else:
             self.time += delta_ms / 1000
 
-        #if media.get_position() == media.get_duration():
-        #    media.seek(0)
-        #print(media.get_position(), media.get_duration(), media.get_time())
-          
-        if self.time // 18 > self.repeats and self.repeats >= 0:
+        if media.get_time() >= 17.92 or media.get_position() == media.get_duration():
+            #media.seek(0)
             media.load(self.path + '/sounds/menu.mp3')
-            self.repeats += 1
 
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
@@ -150,7 +146,6 @@ class PetalHero(Application):
         # Ignore the button which brought us here until it is released
         #self.input._ignore_pressed()
         media.load(self.path + '/sounds/menu.mp3')
-        self.repeats = 0
         self.time = -1
         self.exiting = False
         leds.set_brightness(69)

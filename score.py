@@ -34,7 +34,8 @@ class ScoreView(BaseView):
         self.stars = int(5.0 * (self.accuracy + 0.05))
 
     def draw(self, ctx: Context) -> None:
-        
+        mode = sys_display.get_mode()
+        sys_display.set_mode(mode & ~512)
         #utils.background(ctx)
         ctx.gray(0)
         ctx.rectangle(-120, -120, 240, 240)
@@ -123,7 +124,6 @@ class ScoreView(BaseView):
             self.app.after_score = True
 
     def on_exit(self):
-        sys_display.set_mode(0)
         super().on_exit()
         if self.app:
             utils.play_go(self.app)

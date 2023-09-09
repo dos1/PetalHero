@@ -87,8 +87,8 @@ class SongView(BaseView):
             ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.15)
             pos = (120-RADIUS)/2 * (i+1-(self.time/2 / self.data.period) % 1)
             if pos > 0:
-                ctx.begin_path()
-                if self.debug:
+                #ctx.begin_path()
+                if self.debug and False:
                     utils.circle(ctx, 0, 0, RADIUS + pos)
                 else:
                     ctx.arc(0, 0, RADIUS + pos, 0, tau, 0)
@@ -111,16 +111,14 @@ class SongView(BaseView):
         ctx.line_width = 3
 
         if not self.debug:
+            ctx.gray(0.69)
+            ctx.arc(0, 0, RADIUS + 1.5, 0, tau, 0)
+            ctx.fill()
             for i in range(5):
                 ctx.gray(math.sqrt(self.missed[i]) * 0.6)
-                ctx.begin_path()
-                ctx.arc(0, 0, RADIUS, (tau / 5) * (i - 2.25 - 0.5), (tau / 5) * (i - 2.25 + 0.5), 0)
+                ctx.arc(0, 0, RADIUS - 1.5, (tau / 5) * (i - 2.25 - 0.5), (tau / 5) * (i - 2.25 + 0.5), 0)
                 ctx.line_to(0, 0)
                 ctx.fill()
-            ctx.gray(0.69)
-            ctx.begin_path()
-            ctx.arc(0, 0, RADIUS, 0, tau, 0)
-            ctx.stroke()
         else:
             ctx.begin_path()
             ctx.gray(1.0)
@@ -245,7 +243,8 @@ class SongView(BaseView):
             self.vm.replace(self.scoreview, ViewTransitionBlend())
 
         if self.input.buttons.os.middle.pressed:
-            self.vm.pop(ViewTransitionSwipeRight())
+            self.vm.push(self)
+            self.vm.pop(ViewTransitionSwipeRight(), depth=2)
 
         if self.streak > self.longeststreak:
             self.longeststreak = self.streak
@@ -281,8 +280,12 @@ class SongView(BaseView):
 
         notes = set()
         events_in_margin = set()
-        if self.app:
+
+        if self.app and not self.finished:
             self.events = self.data.track.getEvents(self.time - self.data.period / 2, self.time + self.data.period * 4)
+        else:
+            self.events = []
+        
         for event in self.events:
             if isinstance(event, midireader.Note):
                 if event.time <= self.time <= event.time + event.length:
@@ -321,7 +324,7 @@ class SongView(BaseView):
                 else:
                     event = sorted(events, key = lambda x: x.time)[0]
                     event.played = True
-                    self.led_override[petal] = 150
+                    self.led_override[petal] = 120
                     if event.time > self.laststreak:
                         self.streak += 1
                         self.laststreak = event.time
@@ -349,7 +352,8 @@ class SongView(BaseView):
         #gc.disable()
 
     def on_exit(self):
-        sys_display.set_mode(0)
+        mode = sys_display.get_mode()
+        sys_display.set_mode(mode & ~512)
         super().on_exit()
         self.exiting = True
         if self.app and not self.finished:
