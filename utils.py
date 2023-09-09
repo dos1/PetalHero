@@ -13,6 +13,11 @@ def background(ctx):
     ctx.rectangle(-120, -120, 240, 240)
     ctx.fill()
 
+def clear(ctx, color = (0, 0, 0)):
+    ctx.rgb(color)
+    ctx.rectangle(-120, -120, 240, 240)
+    ctx.fill()
+
 def fire_gradient(ctx):
     ctx.linear_gradient(-50, 0, 50, 0)
     ctx.add_stop(0.0, [145, 37, 0], 1.0)

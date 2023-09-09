@@ -37,9 +37,7 @@ class ScoreView(BaseView):
         mode = sys_display.get_mode()
         sys_display.set_mode(mode & ~512)
         #utils.background(ctx)
-        ctx.gray(0)
-        ctx.rectangle(-120, -120, 240, 240)
-        ctx.fill()
+        utils.clear()
 
         ctx.save()
         ctx.translate(-90, 1)

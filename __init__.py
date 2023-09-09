@@ -21,7 +21,7 @@ class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
         super().__init__(app_ctx)
         self.app = self
-        self.path = app_ctx.bundle_path if app_ctx.bundle_path else '/flash/apps/PetalHero'
+        self.path = app_ctx.bundle_path
 
         self.flower = flower.Flower(0.00125)
         self.loaded = False
@@ -159,4 +159,4 @@ class PetalHero(Application):
         leds.update()
 
 if __name__ == '__main__':
-    st3m.run.run_app(PetalHero)
+    st3m.run.run_app(PetalHero, '/flash/apps/PetalHero')

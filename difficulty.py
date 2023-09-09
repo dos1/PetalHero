@@ -19,7 +19,7 @@ class DifficultyView(BaseView):
         self.song = song
         self._sc.set_item_count(len(self.song.difficulties))
         if len(self.song.difficulties) > 2:
-            self._sc.scroll_right()
+            self._sc.set_position(1)
         self._scroll_pos = 0
 
     def draw(self, ctx: Context) -> None:

@@ -75,9 +75,7 @@ class SongView(BaseView):
         if self.time < 0:
             other = not other
 
-        ctx.gray((0.1 if other else 0.0) + self.miss * 0.15)
-        ctx.rectangle(-120, -120, 240, 240)
-        ctx.fill()
+        utils.clear((0.1 if other else 0.0) + self.miss * 0.15)
                 
         ctx.gray(0.25)
         
