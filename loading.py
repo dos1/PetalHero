@@ -1,6 +1,8 @@
 from st3m.ui.view import BaseView, ViewTransitionBlend
 import gc
 
+import song
+
 class LoadingView(BaseView):
     def __init__(self, app, song, difficulty):
         super().__init__()
@@ -31,6 +33,5 @@ class LoadingView(BaseView):
                 self.vm.replace(self.view, ViewTransitionBlend())
             else:
                 gc.collect()
-                import song
                 self.view = song.SongView(self.app, self.song, self.difficulty)
             self.delay = 500

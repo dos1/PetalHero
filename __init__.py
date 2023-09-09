@@ -13,6 +13,7 @@ sys.path.append('/flash/apps/PetalHero')
 import flower
 import utils
 import select
+import readme
 
 class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
@@ -28,6 +29,8 @@ class PetalHero(Application):
         self.after_score = False
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
+
+        readme.install()
 
     def load(self):
         if self.loaded:

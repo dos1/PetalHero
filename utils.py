@@ -1,6 +1,7 @@
 from st3m.ui.colours import *
 import leds
 import random
+import os
 
 dim = lambda x, y: tuple(map(lambda x: x * y, x))
 
@@ -69,3 +70,11 @@ def circle(ctx, x, y, r):
     ctx.curve_to(x + r, y + (c * r), x + (c * r), y + r, x, y + r)
     ctx.curve_to(x - (c * r), y + r, x - r, y + (c * r), x - r, y)
     ctx.stroke()
+
+def sd_card_present() -> bool:
+    try:
+        os.listdir("/sd")
+        return True
+    except OSError:
+        # OSError: [Errno 19] ENODEV
+        return False
