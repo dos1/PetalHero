@@ -222,6 +222,11 @@ class SongView(BaseView):
 
         media.think(delta_ms)
 
+        if self.input.buttons.os.middle.pressed and not self.vm.is_active(self.app):
+            self.vm.push(self)
+            self.vm.pop(ViewTransitionSwipeRight(), depth=2)
+            return
+
         if not self.vm.is_active(self):
             return
 
@@ -264,11 +269,6 @@ class SongView(BaseView):
 
         if self.input.buttons.app.right.pressed:
             self.debug = not self.debug
-            
-        #if self.input.buttons.os.middle.pressed:
-        #    self.vm.push(self)
-        #    self.vm.pop(ViewTransitionSwipeRight(), depth=2)
-        #    return
 
         self.good = max(0, self.good - delta_ms / self.data.period)
         self.bad = max(0, self.bad - delta_ms / 500)
@@ -343,9 +343,8 @@ class SongView(BaseView):
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
         self.first_think = True
-        #if self.vm.direction == ViewTransitionDirection.FORWARD: # self-pushed
-        #    print("SELF_PUSHED")
-        #    return
+        if self.vm.direction == ViewTransitionDirection.FORWARD: # self-pushed
+            return
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
             self.app.blm.volume = 10000
