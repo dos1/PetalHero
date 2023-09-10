@@ -1,4 +1,4 @@
-from st3m.ui.view import BaseView, ViewTransitionBlend
+from st3m.ui.view import BaseView, ViewTransitionBlend, ViewTransitionDirection
 from st3m.ui.interactions import ScrollController
 import media
 import math
@@ -6,6 +6,7 @@ import math
 import flower
 import loading
 import utils
+import media
 
 class DifficultyView(BaseView):
     def __init__(self, app, song):
@@ -102,6 +103,9 @@ class DifficultyView(BaseView):
         self.flower.think(delta_ms)
         self._scroll_pos += delta_ms / 1000
 
+        if not self.vm.is_active(self):
+            return
+
         if self.input.buttons.app.left.pressed:
             self._sc.scroll_left()
             self._scroll_pos = 0.0
@@ -113,7 +117,10 @@ class DifficultyView(BaseView):
             
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
+            media.stop()
             self.vm.replace(loading.LoadingView(self.app, self.song, self.song.difficulties[self._sc.target_position()]), ViewTransitionBlend())
-            
-        if self.input.buttons.os.middle.pressed:
+
+    def on_exit(self):
+        super().on_exit()
+        if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)

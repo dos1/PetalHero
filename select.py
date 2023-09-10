@@ -1,4 +1,4 @@
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionDirection
 from st3m.ui.interactions import ScrollController
 import media
 import math
@@ -63,7 +63,6 @@ class SelectView(BaseView):
         self.processing_now = None
         self._sc.set_item_count(len(self.songs))
         self._scroll_pos = 0
-        self.process_delay = 250
         self.pos = -1
 
     def draw(self, ctx: Context) -> None:
@@ -83,7 +82,7 @@ class SelectView(BaseView):
             self.processing_now = None
             
         if self.to_process:
-            if self.process_delay <= 0:
+            if not self.vm.transitioning:
                 self.processing_now = self.to_process.pop()
 
             utils.fire_gradient(ctx)
@@ -175,8 +174,6 @@ class SelectView(BaseView):
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
         self._sc.think(ins, delta_ms)
-        if self.process_delay > 0:
-            self.process_delay -= delta_ms
         if not self.to_process and not self.processing_now:
             media.think(delta_ms)
         self.flower.think(delta_ms)
@@ -202,20 +199,20 @@ class SelectView(BaseView):
         if pos != cur_target:
             media.load(self.songs[pos].dirName + "/song.mp3")
             
+        if not self.vm.is_active(self):
+            return
+
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
             if self.songs:
                 self.vm.push(difficulty.DifficultyView(self.app, self.songs[pos]), ViewTransitionSwipeLeft())
-            
-        if self.input.buttons.os.middle.pressed:
-            utils.play_back(self.app)
-
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
-        if self.app and self.app.after_score:
+        if self.vm.direction == ViewTransitionDirection.FORWARD or (self.app and self.app.after_score):
             self.play()
-            self.app.after_score = False
+            if self.app:
+                self.app.after_score = False
 
     def play(self):
         if self.songs:
@@ -225,3 +222,5 @@ class SelectView(BaseView):
 
     def on_exit(self):
         super().on_exit()
+        if self.vm.direction == ViewTransitionDirection.BACKWARD:
+            utils.play_back(self.app)

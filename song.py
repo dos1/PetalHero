@@ -1,4 +1,4 @@
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend, ViewTransitionDirection
 from st3m.ui.colours import *
 from st3m.utils import tau
 import st3m.run
@@ -47,10 +47,10 @@ class SongView(BaseView):
         self.fps = False
         self.debug = False
         self.successive_sames = 0
+        self.first_think = False
         self.finished = False
         self.streak = 0
         self.longeststreak = 0
-        self.exiting = False
         self.led_override = [0] * 5
         self.laststreak = -1
         self.scoreview = None
@@ -61,11 +61,6 @@ class SongView(BaseView):
         self.miss = 0.0
 
     def draw(self, ctx: Context) -> None:
-        mode = sys_display.get_mode()
-        if mode == 0:
-            mode = 16
-        sys_display.set_mode(mode | 512)
-
         self.time += VIDEO_DELAY
         
         other = int(self.time / 2 / self.data.period) % 2
@@ -220,7 +215,16 @@ class SongView(BaseView):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
+
+        if self.first_think:
+            self.first_think = False
+            return
+
         media.think(delta_ms)
+
+        if not self.vm.is_active(self):
+            return
+
         if media.get_time() * 1000 + AUDIO_DELAY == self.time:
             self.successive_sames += min(delta_ms, 100)
         else:
@@ -236,10 +240,7 @@ class SongView(BaseView):
             self.finished = True
             media.stop()
             self.vm.replace(self.scoreview, ViewTransitionBlend())
-
-        if self.input.buttons.os.middle.pressed:
-            self.vm.push(self)
-            self.vm.pop(ViewTransitionSwipeRight(), depth=2)
+            return
 
         if self.streak > self.longeststreak:
             self.longeststreak = self.streak
@@ -264,6 +265,11 @@ class SongView(BaseView):
         if self.input.buttons.app.right.pressed:
             self.debug = not self.debug
             
+        #if self.input.buttons.os.middle.pressed:
+        #    self.vm.push(self)
+        #    self.vm.pop(ViewTransitionSwipeRight(), depth=2)
+        #    return
+
         self.good = max(0, self.good - delta_ms / self.data.period)
         self.bad = max(0, self.bad - delta_ms / 500)
         self.miss = max(0, self.miss - delta_ms / self.data.period)
@@ -297,10 +303,6 @@ class SongView(BaseView):
                     p = 4 if event.number == 0 else event.number - 1
                     if not ins.captouch.petals[p*2].pressed and not event.missed:
                         event.missed = True
-
-
-        if self.exiting:
-            return
 
         leds.set_all_rgb(0, 0, 0)
 
@@ -340,25 +342,37 @@ class SongView(BaseView):
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
+        self.first_think = True
+        #if self.vm.direction == ViewTransitionDirection.FORWARD: # self-pushed
+        #    print("SELF_PUSHED")
+        #    return
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
             self.app.blm.volume = 10000
+            
+    def on_transition_done(self, active):
+        if not active:
+            return
+        sys_display.set_mode(sys_display.get_mode() | 512)
         for i in range(5):
             utils.petal_leds(i, 0.069)
         leds.update()
         #gc.disable()
 
     def on_exit(self):
+        super().on_exit()
         mode = sys_display.get_mode()
         sys_display.set_mode(mode & ~512)
-        super().on_exit()
-        self.exiting = True
-        if self.app and not self.finished:
-            self.app.blm.volume = 14000
-            utils.play_back(self.app)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
         #gc.enable()
+
+        if self.app and not self.finished:
+            self.app.blm.volume = 14000
+            utils.play_back(self.app)
+            
+        if self.song and not self.started:
+            media.load(self.song.dirName + '/song.mp3')
 
 if __name__ == '__main__':
     media.stop()

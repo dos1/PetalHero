@@ -30,8 +30,6 @@ class ScoreView(BaseView):
         self.stars = int(5.0 * (self.accuracy + 0.05))
 
     def draw(self, ctx: Context) -> None:
-        mode = sys_display.get_mode()
-        sys_display.set_mode(mode & ~512)
         #utils.background(ctx)
         utils.clear(ctx)
 
@@ -106,6 +104,9 @@ class ScoreView(BaseView):
                 taunt = random.choice(["perfect1", "perfect2", "perfect3"])
             if self.app and taunt:
                 media.load(self.app.path + "/sounds/" + taunt + ".mp3")
+
+        if not self.vm.is_active(self):
+            return
 
         if self.input.buttons.app.middle.pressed:
             self.vm.pop(ViewTransitionBlend())

@@ -1,5 +1,6 @@
 from st3m.ui.view import BaseView, ViewTransitionBlend
 import gc
+import sys_display
 
 import song
 
@@ -9,8 +10,6 @@ class LoadingView(BaseView):
         self.app = app
         self.song = song
         self.difficulty = difficulty
-        self.delay = 500
-        self.view = None
 
     def draw(self, ctx: Context) -> None:
         # Paint the background black
@@ -24,14 +23,6 @@ class LoadingView(BaseView):
         ctx.text("Loading...")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        super().think(ins, delta_ms)
-        if delta_ms > 100:
-            delta_ms = 0
-        self.delay -= delta_ms
-        if self.delay < 0:
-            if self.view:
-                self.vm.replace(self.view, ViewTransitionBlend())
-            else:
-                gc.collect()
-                self.view = song.SongView(self.app, self.song, self.difficulty)
-            self.delay = 500
+        if self.vm.transitioning or not self.vm.is_active(self): return
+        gc.collect()
+        self.vm.replace(song.SongView(self.app, self.song, self.difficulty), ViewTransitionBlend())

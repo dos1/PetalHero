@@ -180,7 +180,7 @@ class MidiReader(midi.MidiOutStream):
         track, number = noteMap[note]
         self.addEvent(track, Note(startTime, number, endTime - startTime, special = self.velocity[note] == 127))
       else:
-        print("MIDI note 0x%x at %d does not map to any game note." % (note, self.abs_time()))
+        #print("MIDI note 0x%x at %d does not map to any game note." % (note, self.abs_time()))
         pass
     except KeyError:
       print("MIDI note 0x%x on channel %d ending at %d was never started." % (note, channel, self.abs_time()))

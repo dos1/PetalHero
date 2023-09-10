@@ -9,3 +9,6 @@ class = "PetalHero"
 [metadata]
 author = "dos"
 license = "GPL-3.0-or-later"
+url = "https://git.flow3r.garden/dos/PetalHero"
+description = "Frets on Fire-compatible rhythm game"
+version = 0

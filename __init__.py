@@ -1,10 +1,11 @@
 import media, math
 from st3m.ui.colours import *
-from st3m.ui.view import ViewTransitionSwipeLeft
+from st3m.ui.view import ViewTransitionSwipeLeft, ViewTransitionDirection
 from st3m.application import Application, ApplicationContext
 import st3m.run
 import leds
 import bl00mbox
+from time import sleep
 
 # TODO: FIXME
 import sys
@@ -93,7 +94,7 @@ class PetalHero(Application):
         ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
 
     def unload(self):
-        if not self.loaded or not self.exiting:
+        if not self.loaded:
             return
         self.blm.foreground = False
         self.blm.free = True
@@ -114,16 +115,7 @@ class PetalHero(Application):
         else:
             self.time += delta_ms / 1000
 
-        if self.input.buttons.app.middle.pressed:
-            utils.play_go(self.app)
-            self.vm.push(self.select, ViewTransitionSwipeLeft())
-            self.select.play()
-
-        if self.input.buttons.os.middle.pressed:
-            utils.play_back(self.app)
-            self.unload()
-
-        if self.exiting:
+        if not self.vm.is_active(self):
             return
 
         if media.get_time() >= 17.92 or media.get_position() == media.get_duration():
@@ -138,25 +130,31 @@ class PetalHero(Application):
 
         leds.update()
 
+        if self.input.buttons.app.middle.pressed:
+            utils.play_go(self.app)
+            self.vm.push(self.select, ViewTransitionSwipeLeft())
+
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
         if not self.loaded:
             self.load()
-        #self._vm = vm
-        # Ignore the button which brought us here until it is released
-        #self.input._ignore_pressed()
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
-        self.exiting = False
         leds.set_brightness(69)
 
     def on_exit(self):
         super().on_exit()
         media.stop()
-        self.exiting = True
         leds.set_all_rgb(0, 0, 0)
         leds.set_brightness(69)
         leds.update()
+        if self.vm.direction == ViewTransitionDirection.BACKWARD:
+            utils.play_back(self.app)
+            
+    def on_transition_done(self, active):
+        if not active and self.vm.direction == ViewTransitionDirection.BACKWARD:
+            sleep(0.4)
+            self.unload()
 
 if __name__ == '__main__':
     st3m.run.run_app(PetalHero, '/flash/apps/PetalHero')
