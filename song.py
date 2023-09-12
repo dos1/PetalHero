@@ -373,9 +373,7 @@ class SongView(BaseView):
             media.load(self.app.path + '/sounds/start.mp3')
             self.app.blm.volume = 10000
             
-    def on_transition_done(self, active):
-        if not active:
-            return
+    def on_enter_done(self):
         sys_display.set_mode(sys_display.get_mode() | 512)
         for i in range(5):
             utils.petal_leds(i, 0.069)

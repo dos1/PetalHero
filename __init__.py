@@ -151,8 +151,8 @@ class PetalHero(Application):
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
             
-    def on_transition_done(self, active):
-        if not active and self.vm.direction == ViewTransitionDirection.BACKWARD:
+    def on_exit_done(self):
+        if self.vm.direction == ViewTransitionDirection.BACKWARD:
             sleep(0.4)
             self.unload()
 
