@@ -68,7 +68,7 @@ class Tempo(Event):
     return "<%d bpm>" % self.bpm
 
 class Track:
-  granularity = 50
+  granularity = 500
   
   def __init__(self):
     self.events = []
@@ -83,12 +83,12 @@ class Track:
       self.events[t].add(event)
     self.allEvents.add(event)
 
-  def getEvents(self, startTime, endTime):
-    t1, t2 = [int(x) for x in [startTime / self.granularity, endTime / self.granularity]]
+  def getEvents(self, startTime, endTime, events):
+    t1, t2 = [int(x) for x in [startTime / self.granularity, endTime / self.granularity + 1]]
     if t1 > t2:
       t1, t2 = t2, t1
 
-    events = set()
+    events.clear()
     for t in range(max(t1, 0), min(len(self.events), t2)):
       for event in self.events[t]:
         events.add(event)

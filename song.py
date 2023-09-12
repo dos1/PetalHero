@@ -6,6 +6,7 @@ import math
 import media
 import leds
 import sys_display
+from micropython import const
 
 if __name__ == '__main__':
     import sys
@@ -16,10 +17,12 @@ import midireader
 import utils
 import flower
 import score
+import gc
 
-AUDIO_DELAY = -90
-VIDEO_DELAY = 60 - AUDIO_DELAY
-RADIUS = 22
+AUDIO_DELAY = const(-90)
+VIDEO_DELAY = const(60 - AUDIO_DELAY)
+RADIUS = const(22)
+tau = const(6.283185307179586)
 
 class SongView(BaseView):
     def __init__(self, app, song, difficulty):
@@ -41,7 +44,7 @@ class SongView(BaseView):
         self.started = False
         self.time = -self.delay
         self.flower = flower.Flower(0)
-        self.events = []
+        self.events = set()
         self.petals = [None] * 5
         self.demo_mode = False
         self.fps = False
@@ -54,13 +57,19 @@ class SongView(BaseView):
         self.led_override = [0] * 5
         self.laststreak = -1
         self.scoreview = None
+        self.notes = set()
+        self.events_in_margin = set()
+        self.petal_events = [set() for i in range(5)]
         
         self.good = 0.0
         self.bad = 0.0
         self.missed = [0.0] * 5
         self.miss = 0.0
 
+        self.oldmem = 0
+
     def draw(self, ctx: Context) -> None:
+        #mem = gc.mem_alloc()
         self.time += VIDEO_DELAY
         
         other = int(self.time / 2 / self.data.period) % 2
@@ -71,7 +80,8 @@ class SongView(BaseView):
                 
         ctx.gray(0.25)
         
-        for i in [1, 0]:
+        i = 1
+        while i >= 0:
             #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
             #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
             ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.15)
@@ -83,6 +93,7 @@ class SongView(BaseView):
                 else:
                     ctx.arc(0, 0, RADIUS + pos, 0, tau, 0)
                     ctx.fill()
+            i -= 1
         self.time -= VIDEO_DELAY
         
         ctx.line_width = 2
@@ -115,7 +126,7 @@ class SongView(BaseView):
             utils.circle(ctx, 0, 0, RADIUS)
         
         ctx.save()
-        ctx.rotate(tau / 10 + tau / 5)
+        ctx.rotate(const(tau / 10 + tau / 5))
         start = self.time + self.data.period * 4
         stop = self.time
         for i in range(5):
@@ -212,8 +223,13 @@ class SongView(BaseView):
             ctx.font_size = 16
             ctx.move_to(0, 105)
             ctx.text(f"{sys_display.fps():.2f}")
+        #print("draw", gc.mem_alloc() - mem)
 
     def think(self, ins: InputState, delta_ms: int) -> None:
+        #mem = gc.mem_alloc()
+        #print(mem - self.oldmem)
+        #self.oldmem = mem
+        
         super().think(ins, delta_ms)
 
         if self.first_think:
@@ -275,24 +291,27 @@ class SongView(BaseView):
         self.miss = max(0, self.miss - delta_ms / self.data.period)
         for i in range(5):
             self.missed[i] = max(0, self.missed[i] - delta_ms / 1500)
+            self.petal_events[i].clear()
 
         earlyMargin       = 60000.0 / self.data.bpm / 3.5
         lateMargin        = 60000.0 / self.data.bpm / 3.5
 
-        notes = set()
-        events_in_margin = set()
+        self.notes.clear()
+        self.events_in_margin.clear()
 
         if self.app and not self.finished:
-            self.events = self.data.track.getEvents(self.time - self.data.period / 2, self.time + self.data.period * 4)
+            self.data.track.getEvents(self.time - self.data.period / 2, self.time + self.data.period * 4, self.events)
         else:
-            self.events = []
+            self.events.clear()
         
         for event in self.events:
             if isinstance(event, midireader.Note):
                 if event.time <= self.time <= event.time + event.length:
-                    notes.add(event.number)
+                    self.notes.add(event.number)
                 if event.time - earlyMargin <= self.time <= event.time + lateMargin:
-                    events_in_margin.add(event)
+                    self.events_in_margin.add(event)
+                    if not event.played:
+                        self.petal_events[event.number].add(event)
                 if event.time + lateMargin < self.time and not event.played and not event.missed:
                     event.missed = True
                     self.streak = 0
@@ -309,7 +328,7 @@ class SongView(BaseView):
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
             pressed = ins.captouch.petals[p*2].pressed
-            events = set(filter(lambda x: x.number == petal and not x.played, events_in_margin))
+            events = self.petal_events[petal]
 
             self.led_override[petal] = max(0, self.led_override[petal] - delta_ms)
 
@@ -319,7 +338,11 @@ class SongView(BaseView):
                     self.bad = 1.0
                     self.streak = 0
                 else:
-                    event = sorted(events, key = lambda x: x.time)[0]
+                    event = events.pop()
+                    for e in events:
+                        if e.time < event.time:
+                            event = e
+                    #event = sorted(events, key = lambda x: x.time)[0]
                     event.played = True
                     self.led_override[petal] = 120
                     if event.time > self.laststreak:
@@ -334,11 +357,12 @@ class SongView(BaseView):
                 self.petals[petal] = None
 
             active = self.petals[petal] is not None
-            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else (1.0 if petal in notes and self.demo_mode else 0.069))
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else (1.0 if petal in self.notes and self.demo_mode else 0.069))
             if d:
                 utils.petal_leds(petal, d)
 
         leds.update()
+        #print("think", gc.mem_alloc() - mem)
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)

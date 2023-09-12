@@ -53,18 +53,20 @@ class EventDispatcher:
 
 
     def start_of_track(self, current_track):
+        pass
         "Triggers the start of track event"
         
         # I do this twice so that users can overwrite the 
         # start_of_track event handler without worrying whether the 
         # track number is updated correctly.
-        self.outstream.set_current_track(current_track)
-        self.outstream.start_of_track(current_track)
+        #self.outstream.set_current_track(current_track)
+        #self.outstream.start_of_track(current_track)
         
     
     def sysex_event(self, data):
         "Dispatcher for sysex events"
-        self.outstream.sysex_event(data)
+        pass
+        #self.outstream.sysex_event(data)
     
     
     def eof(self):
@@ -78,8 +80,9 @@ class EventDispatcher:
         
         
     def reset_time(self):
+        pass
         "Updates relative/absolute time."
-        self.outstream.reset_time()
+        #self.outstream.reset_time()
         
         
     # Event dispatchers for similar types of events
@@ -104,8 +107,10 @@ class EventDispatcher:
         elif (NOTE_OFF & 0xF0) == hi_nible:
             note, velocity = data
             stream.note_off(channel, note, velocity)
+            
+        return
         
-        elif (AFTERTOUCH & 0xF0) == hi_nible:
+        if (AFTERTOUCH & 0xF0) == hi_nible:
             note, velocity = data
             stream.aftertouch(channel, note, velocity)
         
@@ -137,21 +142,22 @@ class EventDispatcher:
 
 
     def continuous_controllers(self, channel, controller, value):
-    
+        pass
         "Dispatches channel messages"
 
-        stream = self.outstream
+        #stream = self.outstream
         
         # I am not really shure if I ought to dispatch continuous controllers
         # There's so many of them that it can clutter up the OutStream 
         # classes.
         
         # So I just trigger the default event handler
-        stream.continuous_controller(channel, controller, value)
+        #stream.continuous_controller(channel, controller, value)
 
 
 
     def system_commons(self, common_type, common_data):
+        return
     
         "Dispatches system common messages"
         
@@ -184,6 +190,13 @@ class EventDispatcher:
         "Dispatches meta events"
         
         stream = self.outstream
+        
+        if meta_type == TEMPO:
+            b1, b2, b3 = toBytes(data)
+            # uses 3 bytes to represent time between quarter 
+            # notes in microseconds
+            stream.tempo((b1<<16) + (b2<<8) + b3)
+        return        
         
         # SEQUENCE_NUMBER = 0x00 (00 02 ss ss (seq-number))
         if meta_type == SEQUENCE_NUMBER:

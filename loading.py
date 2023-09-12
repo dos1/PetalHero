@@ -26,3 +26,4 @@ class LoadingView(BaseView):
         if self.vm.transitioning or not self.vm.is_active(self): return
         gc.collect()
         self.vm.replace(song.SongView(self.app, self.song, self.difficulty), ViewTransitionBlend())
+        gc.collect()

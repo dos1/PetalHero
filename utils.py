@@ -3,7 +3,11 @@ import leds
 import random
 import os
 
-dim = lambda x, y: tuple(map(lambda x: x * y, x))
+def dim(color, val):
+    res = []
+    for i in range(len(color)):
+        res.append(color[i] * val)
+    return res
 
 def background(ctx):
     ctx.linear_gradient(-120, -120, 120, 120)
@@ -34,9 +38,8 @@ def petal_leds(petal, val, color = None):
     if not color:
         color = PETAL_COLORS[petal]
     color = dim(color, val)
-    start = -11 + petal * 8
-    for i in range(start, start + 7):
-        led = i
+    for i in range(7):
+        led = i - 11 + petal * 8
         if led < 0:
             led += 40
         leds.set_rgb(led, *color)
