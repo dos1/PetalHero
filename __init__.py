@@ -115,7 +115,7 @@ class PetalHero(Application):
         else:
             self.time += delta_ms / 1000
 
-        if not self.vm.is_active(self):
+        if not self.is_active():
             return
 
         if media.get_time() >= 17.92 or media.get_position() == media.get_duration():

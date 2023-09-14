@@ -238,12 +238,12 @@ class SongView(BaseView):
 
         media.think(delta_ms)
 
-        if self.input.buttons.os.middle.pressed and not self.vm.is_active(self.app):
+        if self.input.buttons.os.middle.pressed and not self.is_active():
             self.vm.push(self)
             self.vm.pop(ViewTransitionSwipeRight(), depth=2)
             return
 
-        if not self.vm.is_active(self):
+        if not self.is_active():
             return
 
         if media.get_time() * 1000 + AUDIO_DELAY == self.time:

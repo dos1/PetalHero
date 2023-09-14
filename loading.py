@@ -23,7 +23,7 @@ class LoadingView(BaseView):
         ctx.text("Loading...")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
-        if self.vm.transitioning or not self.vm.is_active(self): return
+        if self.vm.transitioning or not self.is_active(): return
         #gc.collect()
         self.vm.replace(song.SongView(self.app, self.song, self.difficulty), ViewTransitionBlend())
         gc.collect()

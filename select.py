@@ -201,7 +201,7 @@ class SelectView(BaseView):
         if pos != cur_target:
             media.load(self.songs[pos].dirName + "/song.mp3")
             
-        if not self.vm.is_active(self):
+        if not self.is_active():
             return
 
         if self.input.buttons.app.middle.pressed:

@@ -105,7 +105,7 @@ class ScoreView(BaseView):
             if self.app and taunt:
                 media.load(self.app.path + "/sounds/" + taunt + ".mp3")
 
-        if not self.vm.is_active(self):
+        if not self.is_active():
             return
 
         if self.input.buttons.app.middle.pressed:

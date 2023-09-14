@@ -103,7 +103,7 @@ class DifficultyView(BaseView):
         self.flower.think(delta_ms)
         self._scroll_pos += delta_ms / 1000
 
-        if not self.vm.is_active(self):
+        if not self.is_active():
             return
 
         if self.input.buttons.app.left.pressed:
