@@ -52,7 +52,6 @@ class Note(Event):
     self.number   = number
     self.played   = False
     self.missed   = False
-    self.special  = special
 
   def __repr__(self):
     return "<Note #%d time: %d length: %d>" % (self.number, self.time, self.length)
@@ -72,16 +71,18 @@ class Track:
   
   def __init__(self):
     self.events = []
-    self.allEvents = set()
+    #self.allEvents = set()
 
   def addEvent(self, time, event):
     for t in range(int(time / self.granularity), int((time + event.length) / self.granularity) + 1):
       if len(self.events) < t + 1:
         n = t + 1 - len(self.events)
         n *= 8
-        self.events += [set() for n in range(n)]
+        for n in range(n):
+          self.events.append(set())
       self.events[t].add(event)
-    self.allEvents.add(event)
+    #print(len(self.allEvents), event)
+    #self.allEvents.add(event)
 
   def getEvents(self, startTime, endTime, events):
     t1, t2 = [int(x) for x in [startTime / self.granularity, endTime / self.granularity + 1]]
@@ -95,7 +96,10 @@ class Track:
     return events
 
   def getAllEvents(self):
-    return self.allEvents
+    allEvents = set()
+    for i in range(len(self.events)):
+        allEvents.update(self.events[i])
+    return allEvents
 
   def reset(self):
     for eventList in self.events:
@@ -105,9 +109,8 @@ class Track:
           event.missed = False
 
 class MidiReader(midi.MidiOutStream):
-  def __init__(self, song, difficulty):
+  def __init__(self, difficulty):
     super().__init__()
-    self.song = song
     self.bpm = 0
     self.heldNotes = {}
     self.velocity  = {}
@@ -141,10 +144,11 @@ class MidiReader(midi.MidiOutStream):
       # Find out the current scaled time.
       # Yeah, this is reeally slow, but fast enough :)
       scaledTime      = 0.0
-      tempoMarkerTime = 0.0
+      tempoMarkerTime = 0.0      # Find out the current scaled time.
+
       currentBpm      = self.bpm
-      for i, marker in enumerate(self.tempoMarkers):
-        time, bpm = marker
+      for i in range(len(self.tempoMarkers)):
+        time, bpm = self.tempoMarkers[i]
         if time > currentTime:
           break
         scaledTime += ticksToBeats(time - tempoMarkerTime, currentBpm)
@@ -157,21 +161,24 @@ class MidiReader(midi.MidiOutStream):
     
   def tempo(self, value):
     bpm = 60.0 * 10.0**6 / value
-    self.tempoMarkers.append((midi.MidiOutStream.abs_time(self), bpm))
+    if not self.tempoMarkers or bpm != self.tempoMarkers[-1][1]:
+        self.tempoMarkers.append((midi.MidiOutStream.abs_time(self), bpm))
+        #print(self.tempoMarkers)
     if not self.bpm:
       self.bpm = bpm
       self.period = 60000.0 / self.bpm
-      #self.song.setBpm(bpm)
     #print('bpm', bpm)
-    self.addEvent(None, Tempo(bpm))
+    #self.addEvent(None, Tempo(bpm))
 
   def note_on(self, channel, note, velocity):
     if self.get_current_track() > 1: return
+    #print("note_on", channel, note, velocity, self.abs_time())
     self.velocity[note] = velocity
     self.heldNotes[(self.get_current_track(), channel, note)] = self.abs_time()
 
   def note_off(self, channel, note, velocity):
     if self.get_current_track() > 1: return
+    #print("note_off", channel, note, velocity, self.abs_time())
     try:
       startTime = self.heldNotes[(self.get_current_track(), channel, note)]
       endTime   = self.abs_time()

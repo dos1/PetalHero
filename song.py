@@ -33,11 +33,11 @@ class SongView(BaseView):
         if self.app:
             self.app.load_fiba()
         if self.song:
-            self.data = midireader.MidiReader(self.song, self.difficulty)
+            self.data = midireader.MidiReader(self.difficulty)
             midiIn = midi.MidiInFile(self.data, self.song.dirName + '/notes.mid')
             midiIn.read()
         else:
-            self.data = midireader.MidiReader(None, None)
+            self.data = midireader.MidiReader(None)
             self.data.period = 500
             self.data.bpm = 120
         self.delay = 2000 + AUDIO_DELAY
@@ -374,7 +374,7 @@ class SongView(BaseView):
             self.app.blm.volume = 10000
             
     def on_enter_done(self):
-        sys_display.set_mode(sys_display.get_mode() | 512)
+        #sys_display.set_mode(sys_display.get_mode() | 512)
         for i in range(5):
             utils.petal_leds(i, 0.069)
         leds.update()
@@ -382,8 +382,7 @@ class SongView(BaseView):
 
     def on_exit(self):
         super().on_exit()
-        mode = sys_display.get_mode()
-        sys_display.set_mode(mode & ~512)
+        #sys_display.set_mode(sys_display.get_mode() & ~512)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
         #gc.enable()

@@ -6,7 +6,6 @@ from struct import unpack
 # custom import
 from .DataTypeConverters import readBew, readVar, varLen
 
-
 class RawInstreamFile:
     
     """
@@ -29,13 +28,13 @@ class RawInstreamFile:
         if infile:
             if type(infile) == str:
                 infile = open(infile, 'rb')
-                self.data = infile.read()
+                self.data = memoryview(infile.read())
                 infile.close()
             else:
                 # don't close the f
-                self.data = infile.read()
+                self.data = memoryview(infile.read())
         else:
-            self.data = ''
+            self.data = memoryview('')
         # start at beginning ;-)
         self.cursor = 0
 
@@ -66,10 +65,9 @@ class RawInstreamFile:
         
     def nextSlice(self, length, move_cursor=1):
         "Reads the next text slice from the raw data, with length"
-        c = self.cursor
-        slc = self.data[c:c+length]
+        slc = self.data[self.cursor:self.cursor+length]
         if move_cursor:
-            self.moveCursor(length)
+            self.cursor += length
         return slc
         
         
@@ -78,7 +76,10 @@ class RawInstreamFile:
         Reads n bytes of date from the current cursor position.
         Moves cursor if move_cursor is true
         """
-        return readBew(self.nextSlice(n_bytes, move_cursor))
+        d= readBew(self.data[self.cursor:self.cursor+n_bytes])
+        if move_cursor:
+            self.cursor += n_bytes
+        return d
 
 
     def readVarLen(self):
@@ -89,7 +90,7 @@ class RawInstreamFile:
         MAX_VARLEN = 4 # Max value varlen can be
         var = readVar(self.nextSlice(MAX_VARLEN, 0))
         # only move cursor the actual bytes in varlen
-        self.moveCursor(varLen(var))
+        self.cursor += varLen(var)
         return var
 
 

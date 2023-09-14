@@ -80,6 +80,8 @@ class SelectView(BaseView):
             self.processing_now.getDifficulties()
             self.processing_now.saveDifficulties()
             self.processing_now = None
+            if not self.to_process:
+                self.play()
             
         if self.to_process:
             if not self.vm.transitioning:
@@ -101,7 +103,7 @@ class SelectView(BaseView):
                 240.0 * (self.total_process - len(self.to_process)) / self.total_process,
                 10.0,
             ).fill()
-            
+
             return
         
         ctx.save()
@@ -210,7 +212,8 @@ class SelectView(BaseView):
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
         if self.vm.direction == ViewTransitionDirection.FORWARD or (self.app and self.app.after_score):
-            self.play()
+            if not self.to_process:
+                self.play()
             if self.app:
                 self.app.after_score = False
 

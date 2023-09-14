@@ -1,6 +1,6 @@
 # -*- coding: ISO-8859-1 -*-
 
-from struct import pack, unpack
+from ustruct import pack, unpack, pack_into
 
 """
 This module contains functions for reading and writing the special data types
@@ -49,7 +49,6 @@ def setNibbles(hiNibble, loNibble):
     return (hiNibble << 4) + loNibble
 
 
-
 def readBew(value):
     """
     Reads string as big endian word, (asserts len(value) in [1,2,4])
@@ -58,10 +57,13 @@ def readBew(value):
     >>> readBew('aá')
     25057
     """
-    try:
-        return unpack('>%s' % {1:'B', 2:'H', 4:'L'}[len(value)], value)[0]
-    except KeyError:
-        return 0
+    l = len(value)
+    if l == 1:
+        return value[0]
+    if l == 2:
+        return value[1] + value[0] * 256
+    if l == 4:
+        return value[3] + value[2] * 256 + value[1] * 256**2 + value[0] * 256**3
 
 def writeBew(value, length):
     """
@@ -72,7 +74,8 @@ def writeBew(value, length):
     >>> readBew(writeBew(1642193635L, 4))
     1642193635L
     """
-    return pack('>%s' % {1:'B', 2:'H', 4:'L'}[length], value)
+    pack_into('>%s' % ('B' if length == 1 else ('H' if length else 'I')), BUF, 0, value)
+    return memoryview(BUF)
 
 
 
@@ -82,7 +85,6 @@ a midi file. It can be anywhere from 1 to 4 bytes long.
 If the 8'th bit is set in a byte another byte follows. The value is stored
 in the lowest 7 bits of each byte. So max value is 4x7 bits = 28 bits.
 """
-
 
 def readVar(value):
     """
@@ -96,9 +98,9 @@ def readVar(value):
     205042145
     """
     sum = 0
-    for byte in unpack('%sB' % len(value), value):
-        sum = (sum << 7) + (byte & 0x7F)
-        if not 0x80 & byte: break # stop after last byte
+    for i in range(len(value)):
+        sum = (sum << 7) + (value[i] & 0x7F)
+        if not 0x80 & value[i]: break # stop after last byte
     return sum
 
 
@@ -123,7 +125,7 @@ def writeVar(value):
     sevens = to_n_bits(value, varLen(value))
     for i in range(len(sevens)-1):
         sevens[i] = sevens[i] | 0x80
-    return fromBytes(sevens)
+    return sevens
 
 
 def to_n_bits(value, length=1, nbits=7):

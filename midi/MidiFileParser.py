@@ -9,6 +9,16 @@ from .constants import *
 
 from .EventDispatcher import EventDispatcher
 
+data_sizes = {
+    PATCH_CHANGE:1,
+    CHANNEL_PRESSURE:1,
+    NOTE_OFF:2,
+    NOTE_ON:2,
+    AFTERTOUCH:2,
+    CONTINUOUS_CONTROLLER:2,
+    PITCH_BEND:2,
+}
+
 class MidiFileParser:
 
     """
@@ -121,15 +131,6 @@ class MidiFileParser:
                 if meta_type == END_OF_TRACK: return
             # Oh! Then it must be a midi event (channel voice message)
             else:
-                data_sizes = {
-                    PATCH_CHANGE:1,
-                    CHANNEL_PRESSURE:1,
-                    NOTE_OFF:2,
-                    NOTE_ON:2,
-                    AFTERTOUCH:2,
-                    CONTINUOUS_CONTROLLER:2,
-                    PITCH_BEND:2,
-                }
                 data_size = data_sizes.get(hi_nible, 0)
                 channel_data = raw_in.nextSlice(data_size)
                 event_type, channel = hi_nible, lo_nible
@@ -138,7 +139,7 @@ class MidiFileParser:
 
     def parseMTrkChunks(self):
         "Parses all track chunks."
-        for t in range(self.nTracks):
+        for t in range(min(2, self.nTracks)):
             self._current_track = t
             self.parseMTrkChunk() # this is where it's at!
         self.dispatch.eof()

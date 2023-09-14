@@ -53,14 +53,13 @@ class EventDispatcher:
 
 
     def start_of_track(self, current_track):
-        pass
         "Triggers the start of track event"
         
         # I do this twice so that users can overwrite the 
         # start_of_track event handler without worrying whether the 
         # track number is updated correctly.
-        #self.outstream.set_current_track(current_track)
-        #self.outstream.start_of_track(current_track)
+        self.outstream.set_current_track(current_track)
+        self.outstream.start_of_track(current_track)
         
     
     def sysex_event(self, data):
@@ -80,9 +79,8 @@ class EventDispatcher:
         
         
     def reset_time(self):
-        pass
         "Updates relative/absolute time."
-        #self.outstream.reset_time()
+        self.outstream.reset_time()
         
         
     # Event dispatchers for similar types of events
@@ -93,7 +91,7 @@ class EventDispatcher:
         "Dispatches channel messages"
         
         stream = self.outstream
-        data = toBytes(data)
+        #data = toBytes(data)
         
         if (NOTE_ON & 0xF0) == hi_nible:
             note, velocity = data
@@ -157,8 +155,6 @@ class EventDispatcher:
 
 
     def system_commons(self, common_type, common_data):
-        return
-    
         "Dispatches system common messages"
         
         stream = self.outstream
@@ -171,7 +167,7 @@ class EventDispatcher:
             stream.midi_time_code(msg_type, values)
         
         elif common_type == SONG_POSITION_POINTER:
-            hibyte, lobyte = toBytes(common_data)
+            hibyte, lobyte = common_data
             value = (hibyte<<7) + lobyte
             stream.song_position_pointer(value)
 
@@ -192,7 +188,7 @@ class EventDispatcher:
         stream = self.outstream
         
         if meta_type == TEMPO:
-            b1, b2, b3 = toBytes(data)
+            b1, b2, b3 = data
             # uses 3 bytes to represent time between quarter 
             # notes in microseconds
             stream.tempo((b1<<16) + (b2<<8) + b3)
@@ -255,7 +251,7 @@ class EventDispatcher:
         
         # TEMPO = 0x51 (51 03 tt tt tt (tempo in us/quarternote))
         elif meta_type == TEMPO:
-            b1, b2, b3 = toBytes(data)
+            b1, b2, b3 = data
             # uses 3 bytes to represent time between quarter 
             # notes in microseconds
             stream.tempo((b1<<16) + (b2<<8) + b3)
@@ -263,7 +259,7 @@ class EventDispatcher:
         # SMTP_OFFSET = 0x54 (54 05 hh mm ss ff xx)
         elif meta_type == SMTP_OFFSET:
             try:
-                hour, minute, second, frame, framePart = toBytes(data)
+                hour, minute, second, frame, framePart = data
                 stream.smtp_offset(
                         hour, minute, second, frame, framePart)
             except ValueError:
@@ -272,24 +268,24 @@ class EventDispatcher:
         # TIME_SIGNATURE = 0x58 (58 04 nn dd cc bb)
         elif meta_type == TIME_SIGNATURE:
             try:
-                nn, dd, cc, bb = toBytes(data)
+                nn, dd, cc, bb = data
                 stream.time_signature(nn, dd, cc, bb)
             except ValueError as e:
                 pass
         
         # KEY_SIGNATURE = 0x59 (59 02 sf mi)
         elif meta_type == KEY_SIGNATURE:
-            sf, mi = toBytes(data)
+            sf, mi = data
             stream.key_signature(sf, mi)
         
         # SPECIFIC = 0x7F (Sequencer specific event)
         elif meta_type == SPECIFIC:
-            meta_data = toBytes(data)
+            meta_data = data
             stream.sequencer_specific(meta_data)
         
         # Handles any undefined meta events
         else: # undefined meta type
-            meta_data = toBytes(data)
+            meta_data = data
             stream.meta_event(meta_type, meta_data)
 
 
