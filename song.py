@@ -49,6 +49,7 @@ class SongView(BaseView):
         self.demo_mode = False
         self.fps = False
         self.debug = False
+        self.paused = False
         self.successive_sames = 0
         self.first_think = False
         self.finished = False
@@ -223,6 +224,15 @@ class SongView(BaseView):
             ctx.font_size = 16
             ctx.move_to(0, 105)
             ctx.text(f"{sys_display.fps():.2f}")
+            
+        if self.paused:
+            ctx.rgba(0, 0, 0, 0.5)
+            ctx.rectangle(-120, -120, 240, 240).fill()
+            ctx.move_to(0, 0)
+            ctx.gray(0.9)
+            ctx.font = "Camp Font 2"
+            ctx.font_size = 64
+            ctx.text("PAUSED")
         #print("draw", gc.mem_alloc() - mem)
 
     def think(self, ins: InputState, delta_ms: int) -> None:
@@ -246,7 +256,7 @@ class SongView(BaseView):
         if not self.is_active():
             return
 
-        if media.get_time() * 1000 + AUDIO_DELAY == self.time:
+        if media.get_time() * 1000 + AUDIO_DELAY == self.time and not self.paused:
             self.successive_sames += min(delta_ms, 100)
         else:
             self.successive_sames = 0
@@ -266,8 +276,9 @@ class SongView(BaseView):
         if self.streak > self.longeststreak:
             self.longeststreak = self.streak
 
-        self.delay -= delta_ms
-        self.time += delta_ms
+        if not self.paused:
+            self.delay -= delta_ms
+            self.time += delta_ms
 
         if self.delay < -AUDIO_DELAY and not self.started:
             self.started = True
@@ -278,13 +289,21 @@ class SongView(BaseView):
             self.time = media.get_time() * 1000 + AUDIO_DELAY
 
         if self.input.buttons.app.middle.pressed:
-            self.demo_mode = not self.demo_mode
+            if self.paused:
+                media.play()
+            else:
+                media.pause()
+            self.paused = not self.paused
 
         if self.input.buttons.app.left.pressed:
             self.fps = not self.fps
+            self.debug = not self.debug
 
         if self.input.buttons.app.right.pressed:
-            self.debug = not self.debug
+            self.demo_mode = not self.demo_mode
+
+        if self.paused:
+            return
 
         self.good = max(0, self.good - delta_ms / self.data.period)
         self.bad = max(0, self.bad - delta_ms / 500)
