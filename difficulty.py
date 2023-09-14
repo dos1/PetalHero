@@ -1,12 +1,15 @@
-from st3m.ui.view import BaseView, ViewTransitionBlend, ViewTransitionDirection
+from st3m.ui.view import BaseView, ViewTransitionBlend
 from st3m.ui.interactions import ScrollController
-import media
 import math
+try:
+    import media
+    from st3m.ui.view import ViewTransitionDirection
+except ImportError:
+    pass
 
 import flower
 import loading
 import utils
-import media
 
 class DifficultyView(BaseView):
     def __init__(self, app, song):

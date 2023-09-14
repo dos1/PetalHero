@@ -1,9 +1,12 @@
 from st3m.ui.view import BaseView, ViewManager, ViewTransitionBlend
 import st3m.run
-import media
 import math
 import random
 import sys_display
+try:
+    import media
+except ImportError:
+    pass
 
 if __name__ == '__main__':
     import sys

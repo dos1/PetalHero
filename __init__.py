@@ -1,11 +1,17 @@
-import media, math
+import math
 from st3m.ui.colours import *
-from st3m.ui.view import ViewTransitionSwipeLeft, ViewTransitionDirection
+from st3m.ui.view import ViewTransitionSwipeLeft
 from st3m.application import Application, ApplicationContext
 import st3m.run
 import leds
 import bl00mbox
 from time import sleep
+UNSUPPORTED = False
+try:
+    import media
+    from st3m.ui.view import ViewTransitionDirection
+except ImportError:
+    UNSUPPORTED = True
 
 # TODO: FIXME
 import sys
@@ -63,6 +69,22 @@ class PetalHero(Application):
             self.app.fiba_sound[i].signals.output = self.blm.mixer
 
     def draw(self, ctx: Context):
+        if UNSUPPORTED:
+            utils.clear(ctx)
+            ctx.font = "Camp Font 3"
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.gray(1)
+            ctx.font_size = 22
+            ctx.move_to(0, -30)
+            ctx.text("Petal Hero requires")
+            ctx.move_to(0,-4)
+            ctx.text("firmware 1.3.0 or later.")
+            ctx.move_to(0,24)
+            ctx.font_size = 16
+            ctx.text("Please upgrade and try again.")
+            return
+            
         utils.background(ctx)
 
         ctx.save()
@@ -107,6 +129,9 @@ class PetalHero(Application):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
+        if UNSUPPORTED:
+            return
+
         media.think(delta_ms)
         self.flower.think(delta_ms)
 
@@ -136,6 +161,8 @@ class PetalHero(Application):
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
+        if UNSUPPORTED:
+            return
         if not self.loaded:
             self.load()
         media.load(self.path + '/sounds/menu.mp3')
@@ -144,6 +171,8 @@ class PetalHero(Application):
 
     def on_exit(self):
         super().on_exit()
+        if UNSUPPORTED:
+            return
         media.stop()
         leds.set_all_rgb(0, 0, 0)
         leds.set_brightness(69)
@@ -152,6 +181,8 @@ class PetalHero(Application):
             utils.play_back(self.app)
             
     def on_exit_done(self):
+        if UNSUPPORTED:
+            return
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             sleep(0.4)
             self.unload()

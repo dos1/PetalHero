@@ -1,12 +1,16 @@
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend, ViewTransitionDirection
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend
 from st3m.ui.colours import *
 from st3m.utils import tau
 import st3m.run
 import math
-import media
 import leds
 import sys_display
 from micropython import const
+try:
+    import media
+    from st3m.ui.view import ViewTransitionDirection
+except ImportError:
+    pass
 
 if __name__ == '__main__':
     import sys

@@ -1,8 +1,12 @@
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionDirection
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft
 from st3m.ui.interactions import ScrollController
-import media
 import math
 import os, stat
+try:
+    import media
+    from st3m.ui.view import ViewTransitionDirection
+except ImportError:
+    pass
 
 import flower
 import difficulty
