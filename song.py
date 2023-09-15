@@ -137,8 +137,14 @@ class SongView(BaseView):
         for i in range(5):
             for event in self.events:
                 if not isinstance(event, midireader.Note): continue
-                if not start >= event.time >= stop and not start >= (event.time + event.length) >= stop and not event.time <= stop <= (event.time + event.length): continue
                 if not event.number == i: continue
+                if not start >= event.time >= stop and not start >= (event.time + event.length) >= stop and not event.time <= stop <= (event.time + event.length): continue
+                
+                chord = False
+                for e in self.events:
+                    if e != event and e.time == event.time:
+                        chord = True
+                        break
 
                 ctx.begin_path()
                 time = event.time - VIDEO_DELAY
@@ -153,7 +159,7 @@ class SongView(BaseView):
                         length = 0
                     if not event.missed or self.demo_mode:
                         during = True
-                        arc *= 1.5
+                        arc *= 1.66
                     
                 ctx.line_width = 6
                 ctx.line_cap = ctx.NONE
@@ -169,11 +175,17 @@ class SongView(BaseView):
                     #ctx.line_to(0, max(0, - (stop - (time + length)) / (start - stop) * (120 - RADIUS) + RADIUS))
                     #ctx.stroke()
                 
-                ctx.rgb(*utils.PETAL_COLORS[i])
                 pos = - (stop - time) / (start - stop)
                 ctx.line_width = 3 + 3 * pos + during * 2
                 
                 if pos >= 0 and (not event.missed or self.demo_mode): # and not self.debug:
+                    if chord:
+                        ctx.gray(0.8)
+                        ctx.arc(0, 0, pos * (120 - RADIUS) + RADIUS, -(arc*1.25) + tau / 4, -arc + tau / 4, 0)
+                        ctx.stroke()
+                        ctx.arc(0, 0, pos * (120 - RADIUS) + RADIUS, arc + tau / 4, (arc*1.25) + tau / 4, 0)
+                        ctx.stroke()
+                    ctx.rgb(*utils.PETAL_COLORS[i])
                     ctx.arc(0, 0, pos * (120 - RADIUS) + RADIUS, -arc + tau / 4, arc + tau / 4, 0)
                     #ctx.arc(0, 0, max(0, - (stop - (time + length)) / (start - stop) * 120), -tau/40, tau/40, 1)
                     ctx.stroke()
