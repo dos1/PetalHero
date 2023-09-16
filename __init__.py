@@ -119,6 +119,7 @@ class PetalHero(Application):
         if not self.loaded:
             return
         self.blm.foreground = False
+        self.blm.clear()
         self.blm.free = True
         self.blm = None
         self.loaded = False
@@ -143,9 +144,8 @@ class PetalHero(Application):
         if not self.is_active():
             return
 
-        if media.get_time() >= 17.92 or media.get_position() == media.get_duration():
-            #media.seek(0)
-            media.load(self.path + '/sounds/menu.mp3')
+        if media.get_position() == media.get_duration():
+            media.seek(0)
 
         #leds.set_brightness(32 - int(math.cos(self.time) * 32))
         leds.set_all_rgb(0, 0, 0)

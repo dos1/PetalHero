@@ -54,14 +54,12 @@ class SongView(BaseView):
         self.fps = False
         self.debug = False
         self.paused = False
-        self.successive_sames = 0
         self.first_think = False
         self.finished = False
         self.streak = 0
         self.longeststreak = 0
         self.led_override = [0] * 5
         self.laststreak = -1
-        self.scoreview = None
         self.notes = set()
         self.events_in_margin = set()
         self.petal_events = [set() for i in range(5)]
@@ -272,21 +270,10 @@ class SongView(BaseView):
         if not self.is_active():
             return
 
-        if media.get_time() * 1000 + AUDIO_DELAY == self.time and not self.paused:
-            self.successive_sames += min(delta_ms, 100)
-        else:
-            self.successive_sames = 0
-
-        #if self.input.buttons.app.middle.pressed:
-        #    self.successive_sames = 1000
-
-        if self.successive_sames > 250 and not self.scoreview:
-            self.scoreview = score.ScoreView(self.app, self.data, self.longeststreak)
-
-        if self.successive_sames > 350 and not self.finished:
+        if self.song and self.started and media.get_position() == media.get_duration() and not self.finished:
             self.finished = True
             media.stop()
-            self.vm.replace(self.scoreview, ViewTransitionBlend())
+            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak), ViewTransitionBlend())
             return
 
         if self.streak > self.longeststreak:

@@ -100,6 +100,8 @@ class SelectView(BaseView):
             ctx.move_to (0, -10)
             ctx.text("PROCESSING NEW SONGS")
             
+            ctx.rgba(0.8, 0.8, 0.8, 0.15)
+            ctx.rectangle(-120.0, 3.0, 240.0, 10.0).fill()
             ctx.gray(0.8)
             ctx.rectangle(
                 -120.0,
@@ -202,11 +204,14 @@ class SelectView(BaseView):
         if pos < 0: pos = 0
         if pos > len(self.songs) - 1: pos = len(self.songs) - 1
 
-        if pos != cur_target:
-            media.load(self.songs[pos].dirName + "/song.mp3")
-            
         if not self.is_active():
             return
+
+        if pos != cur_target:
+            media.load(self.songs[pos].dirName + "/song.mp3")
+
+        if media.get_position() == media.get_duration():
+            media.seek(0)
 
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
