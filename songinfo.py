@@ -3,30 +3,7 @@ import os
 import midi
 import midireader
 
-AMAZING_DIFFICULTY      = 0
-MEDIUM_DIFFICULTY       = 1
-EASY_DIFFICULTY         = 2
-SUPAEASY_DIFFICULTY     = 3
-
-class Difficulty:
-  def __init__(self, id, text):
-    self.id   = id
-    self.text = text
-    
-  def __str__(self):
-    return self.text
-
-  def __repr__(self):
-    return self.text
-
-difficulties = {
-  SUPAEASY_DIFFICULTY: Difficulty(SUPAEASY_DIFFICULTY, "Supaeasy"),
-  EASY_DIFFICULTY:     Difficulty(EASY_DIFFICULTY,     "Easy"),
-  MEDIUM_DIFFICULTY:   Difficulty(MEDIUM_DIFFICULTY,   "Medium"),
-  AMAZING_DIFFICULTY:  Difficulty(AMAZING_DIFFICULTY,  "Amazing"),
-}
-
-noteSet = set(midireader.noteMap.keys())
+from midireader import difficulties, noteSet
 
 class MidiInfoReader(midi.MidiOutStream):
   __slots__ = ("notes", )

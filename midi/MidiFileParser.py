@@ -77,6 +77,7 @@ class MidiFileParser:
         "Parses a track chunk. This is the most important part of the parser."
         
         # set time to 0 at start of a track
+        self.ignored = False
         self.dispatch.reset_time()
         
         dispatch = self.dispatch
@@ -126,20 +127,25 @@ class MidiFileParser:
                 meta_type = raw_in.readBew()
                 meta_length = raw_in.readVarLen()
                 meta_data = raw_in.nextSlice(meta_length)
+                if self.ignored and meta_type != TEMPO: return
                 if not meta_length: return
-                dispatch.meta_event(meta_type, meta_data)
-                if meta_type == END_OF_TRACK: return
+                res = dispatch.meta_event(meta_type, meta_data)
+                if meta_type == SEQUENCE_NAME:
+                    self.ignored = res
+                if meta_type == END_OF_TRACK:
+                    return
             # Oh! Then it must be a midi event (channel voice message)
             else:
                 data_size = data_sizes.get(hi_nible, 0)
                 channel_data = raw_in.nextSlice(data_size)
+                if self.ignored: return
                 event_type, channel = hi_nible, lo_nible
                 dispatch.channel_messages(event_type, channel, channel_data)
 
 
     def parseMTrkChunks(self):
         "Parses all track chunks."
-        for t in range(min(2, self.nTracks)):
+        for t in range(self.nTracks):
             self._current_track = t
             self.parseMTrkChunk() # this is where it's at!
         self.dispatch.eof()

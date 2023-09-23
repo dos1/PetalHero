@@ -3,6 +3,7 @@ import gc
 import sys_display
 
 import song
+import utils
 
 class LoadingView(BaseView):
     def __init__(self, app, song, difficulty):
@@ -23,6 +24,7 @@ class LoadingView(BaseView):
         ctx.text("Loading...")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
+        utils.blm_timeout(self, delta_ms)
         if self.vm.transitioning or not self.is_active(): return
         #gc.collect()
         self.vm.replace(song.SongView(self.app, self.song, self.difficulty), ViewTransitionBlend())

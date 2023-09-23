@@ -7,7 +7,7 @@ Petal Hero is compatible with songs for Frets on Fire, but with
 one caveat: you need to mix audio tracks and save them as MP3.
 This should do:
 
-  sox -m *.ogg -c 1 -C 64 -r 48000 song.mp3
+  sox -m *.ogg -c 1 -C 128 -r 48k song.mp3 norm -3
 
 You need song.ini, song.mp3 and notes.mid in the song directory.
 """

@@ -17,10 +17,10 @@ class Difficulty:
     return self.text
 
 difficulties = {
-  SUPAEASY_DIFFICULTY: Difficulty(SUPAEASY_DIFFICULTY, "Supaeasy"),
-  EASY_DIFFICULTY:     Difficulty(EASY_DIFFICULTY,     "Easy"),
-  MEDIUM_DIFFICULTY:   Difficulty(MEDIUM_DIFFICULTY,   "Medium"),
-  AMAZING_DIFFICULTY:  Difficulty(AMAZING_DIFFICULTY,  "Amazing"),
+  SUPAEASY_DIFFICULTY: Difficulty(SUPAEASY_DIFFICULTY, "Easy"),
+  EASY_DIFFICULTY:     Difficulty(EASY_DIFFICULTY,     "Medium"),
+  MEDIUM_DIFFICULTY:   Difficulty(MEDIUM_DIFFICULTY,   "Hard"),
+  AMAZING_DIFFICULTY:  Difficulty(AMAZING_DIFFICULTY,  "Expert"),
 }
 
 baseNotes = {
@@ -36,6 +36,8 @@ for basenote, diff in baseNotes.items():
     noteMap[basenote + note] = (diff, note)
 
 reverseNoteMap = dict([(v, k) for k, v in list(noteMap.items())])
+
+noteSet = set(noteMap.keys())
 
 class Event:
   __slots__ = ("length", "time")
@@ -119,6 +121,8 @@ class MidiReader(midi.MidiOutStream):
     #self.tracks        = [Track() for t in range(len(difficulties))]
     self.difficulty = difficulty
     self.track = Track()
+    self.nTracks = -1
+    self.ignored = False
 
   def addEvent(self, track, event):
     time = event.time
@@ -158,8 +162,10 @@ class MidiReader(midi.MidiOutStream):
 
   def header(self, format, nTracks, division):
     self.ticksPerBeat = division
+    self.nTracks = nTracks
     
   def tempo(self, value):
+    #if self.ignored: return
     bpm = 60.0 * 10.0**6 / value
     if not self.tempoMarkers or bpm != self.tempoMarkers[-1][1]:
         self.tempoMarkers.append((midi.MidiOutStream.abs_time(self), bpm))
@@ -170,24 +176,30 @@ class MidiReader(midi.MidiOutStream):
     #print('bpm', bpm)
     #self.addEvent(None, Tempo(bpm))
 
+  def sequence_name(self, val):
+    name = ''.join(list(map(chr, val)))
+    #print(name)
+    self.ignored = name != "PART GUITAR" and self.nTracks > 2
+    return self.ignored
+
   def note_on(self, channel, note, velocity):
-    if self.get_current_track() > 1: return
+    if self.ignored: return
     #print("note_on", channel, note, velocity, self.abs_time())
+    if not note in noteMap:
+      return
     self.velocity[note] = velocity
     self.heldNotes[(self.get_current_track(), channel, note)] = self.abs_time()
 
   def note_off(self, channel, note, velocity):
-    if self.get_current_track() > 1: return
+    if self.ignored: return
     #print("note_off", channel, note, velocity, self.abs_time())
+    if not note in noteMap:
+      return
     try:
       startTime = self.heldNotes[(self.get_current_track(), channel, note)]
       endTime   = self.abs_time()
       del self.heldNotes[(self.get_current_track(), channel, note)]
-      if note in noteMap:
-        track, number = noteMap[note]
-        self.addEvent(track, Note(startTime, number, endTime - startTime, special = self.velocity[note] == 127))
-      else:
-        #print("MIDI note 0x%x at %d does not map to any game note." % (note, self.abs_time()))
-        pass
+      track, number = noteMap[note]
+      self.addEvent(track, Note(startTime, number, endTime - startTime, special = self.velocity[note] == 127))
     except KeyError:
       print("MIDI note 0x%x on channel %d ending at %d was never started." % (note, channel, self.abs_time()))

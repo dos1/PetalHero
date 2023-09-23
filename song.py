@@ -5,7 +5,9 @@ import st3m.run
 import math
 import leds
 import sys_display
+import sys_scope
 from micropython import const
+from time import ticks_ms
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
@@ -63,16 +65,20 @@ class SongView(BaseView):
         self.notes = set()
         self.events_in_margin = set()
         self.petal_events = [set() for i in range(5)]
+        self.last_played = 0
         
         self.good = 0.0
         self.bad = 0.0
         self.missed = [0.0] * 5
         self.miss = 0.0
 
-        self.oldmem = 0
+        #self.oldmem = 0
+        #self.redraw = True
+        #self.acc = 0
 
     def draw(self, ctx: Context) -> None:
         #mem = gc.mem_alloc()
+        #self.redraw = True
         self.time += VIDEO_DELAY
         
         other = int(self.time / 2 / self.data.period) % 2
@@ -211,16 +217,26 @@ class SongView(BaseView):
         
         ctx.save()
         ctx.rgb(0.5 + self.bad * 0.4, 0.5, 0.5)
+        #ctx.rectangle(-8, -8, 15, 15)
+        #ctx.clip()
+        ctx.line_width = 12
+        ctx.scale(0.0625, 0.125 * 0.3)
         #ctx.rotate(wiggle)
+        ctx.begin_path()
         if self.started:
-            ctx.rectangle(-8, -8, 15, 15)
-            ctx.clip() # for firmwares that stroke the scope...
-            ctx.scale(0.0625, 0.125 * 0.3)
-            ctx.begin_path()
-            ctx.scope()
-            ctx.line_to(120, 0)
-            ctx.line_to(-120, 0)
+            buf = sys_scope.get_buffer_x()
+            ctx.move_to(-120, 0)
+            for i in range(0, len(buf), 32):
+                val = buf[i] / 32
+                ctx.line_to(-120 + i, max(6, val))
+            for i in range(len(buf) - 1, 0, -32):
+                val = buf[i] / 32
+                ctx.line_to(-120 + i, min(-6, val))
             ctx.fill()
+        else:
+            ctx.move_to(-120, 0)
+            ctx.line_to(120, 0)
+            ctx.stroke()
         ctx.restore()
         
         ctx.gray(0.8)
@@ -248,13 +264,25 @@ class SongView(BaseView):
             ctx.font_size = 64
             ctx.text("PAUSED")
         #print("draw", gc.mem_alloc() - mem)
+        #t = ticks_ms()
+        #print(ticks_ms() - t)
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         #mem = gc.mem_alloc()
         #print(mem - self.oldmem)
         #self.oldmem = mem
+
+        #self.acc += delta_ms
+        #if self.redraw:
+        #    delta_ms = self.acc
+        #    self.acc = 0
+        #    self.redraw = False
+        #else:
+        #    return
+        #if (delta_ms > 100): print(delta_ms)
         
         super().think(ins, delta_ms)
+        utils.blm_timeout(self, delta_ms)
 
         if self.first_think:
             self.first_think = False
@@ -262,7 +290,7 @@ class SongView(BaseView):
 
         media.think(delta_ms)
 
-        if self.input.buttons.os.middle.pressed and not self.is_active():
+        if self.input.buttons.os.middle.pressed and not self.is_active(): # TODO: will that work with pending transitions?
             self.vm.push(self)
             self.vm.pop(ViewTransitionSwipeRight(), depth=2)
             return
@@ -273,6 +301,7 @@ class SongView(BaseView):
         if self.song and self.started and media.get_position() == media.get_duration() and not self.finished:
             self.finished = True
             media.stop()
+            gc.collect()
             self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak), ViewTransitionBlend())
             return
 
@@ -316,7 +345,7 @@ class SongView(BaseView):
             self.petal_events[i].clear()
 
         earlyMargin       = 60000.0 / self.data.bpm / 3.5
-        lateMargin        = 60000.0 / self.data.bpm / 3.5
+        lateMargin        = 60000.0 / self.data.bpm / 3.5 + delta_ms
 
         self.notes.clear()
         self.events_in_margin.clear()
@@ -340,6 +369,8 @@ class SongView(BaseView):
                     if not self.demo_mode:
                         self.missed[event.number] = 1.0
                         self.miss = 1.0
+                        if event.time >= self.last_played:
+                            media.set_volume(0.25)
                 if event.played and event.time + event.length - lateMargin > self.time:
                     p = 4 if event.number == 0 else event.number - 1
                     if not ins.captouch.petals[p*2].pressed and not event.missed:
@@ -366,7 +397,7 @@ class SongView(BaseView):
                             event = e
                     #event = sorted(events, key = lambda x: x.time)[0]
                     event.played = True
-                    self.led_override[petal] = 120
+                    self.led_override[petal] = 50
                     if event.time > self.laststreak:
                         self.streak += 1
                         self.laststreak = event.time
@@ -374,6 +405,8 @@ class SongView(BaseView):
                             print(self.time - event.time)
                     self.petals[petal] = event
                     self.good = 1.0
+                    self.last_played = event.time
+                    media.set_volume(1.0)
 
             if not pressed:
                 self.petals[petal] = None
@@ -384,6 +417,7 @@ class SongView(BaseView):
                 utils.petal_leds(petal, d)
 
         leds.update()
+        #gc.collect()
         #print("think", gc.mem_alloc() - mem)
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
@@ -393,7 +427,8 @@ class SongView(BaseView):
             return
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
-            self.app.blm.volume = 10000
+            utils.volume(self.app, 10000)
+        leds.set_slew_rate(238)
             
     def on_enter_done(self):
         #sys_display.set_mode(sys_display.get_mode() | 512)
@@ -410,7 +445,7 @@ class SongView(BaseView):
         #gc.enable()
 
         if self.app and not self.finished:
-            self.app.blm.volume = 14000
+            utils.volume(self.app, 14000)
             utils.play_back(self.app)
             
         if self.song and not self.started:

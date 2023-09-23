@@ -182,6 +182,7 @@ class SelectView(BaseView):
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
         self._sc.think(ins, delta_ms)
+        utils.blm_timeout(self, delta_ms)
         if not self.to_process and not self.processing_now:
             media.think(delta_ms)
         self.flower.think(delta_ms)
@@ -191,11 +192,14 @@ class SelectView(BaseView):
         if cur_target < 0: cur_target = 0
         if cur_target > len(self.songs) - 1: cur_target = len(self.songs) - 1
 
-        if self.input.buttons.app.left.pressed:
+        if not self.is_active():
+            return
+
+        if self.input.buttons.app.left.pressed or self.input.buttons.app.left.repeated:
             self._sc.scroll_left()
             self._scroll_pos = 0.0
             utils.play_crunch(self.app)
-        elif self.input.buttons.app.right.pressed:
+        elif self.input.buttons.app.right.pressed or self.input.buttons.app.right.repeated:
             self._sc.scroll_right()
             self._scroll_pos = 0.0
             utils.play_crunch(self.app)
@@ -203,9 +207,6 @@ class SelectView(BaseView):
         pos = self._sc.target_position()
         if pos < 0: pos = 0
         if pos > len(self.songs) - 1: pos = len(self.songs) - 1
-
-        if not self.is_active():
-            return
 
         if pos != cur_target:
             media.load(self.songs[pos].dirName + "/song.mp3")

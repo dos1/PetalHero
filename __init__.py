@@ -6,6 +6,7 @@ import st3m.run
 import leds
 import bl00mbox
 from time import sleep
+import sys_display
 UNSUPPORTED = False
 try:
     import media
@@ -36,8 +37,12 @@ class PetalHero(Application):
         self.after_score = False
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
+        
+        self.blm_timeout = 1
 
         readme.install()
+
+    #def show_icons(self): return True
 
     def load(self):
         if self.loaded:
@@ -60,8 +65,13 @@ class PetalHero(Application):
         self.loaded = True
 
     def load_fiba(self):
+        if not self.loaded:
+            return
+
         if self.app.fiba_sound:
             return
+        
+        utils.blm_wake(self, 1)
 
         self.app.fiba_sound = []
         for i in range(6):
@@ -135,6 +145,7 @@ class PetalHero(Application):
 
         media.think(delta_ms)
         self.flower.think(delta_ms)
+        utils.blm_timeout(self, delta_ms)
 
         if self.time < 0:
             self.time = 0
@@ -167,15 +178,16 @@ class PetalHero(Application):
             self.load()
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
-        leds.set_brightness(69)
+        leds.set_slew_rate(255)
+        leds.set_auto_update(0)
 
     def on_exit(self):
         super().on_exit()
         if UNSUPPORTED:
             return
         media.stop()
+        leds.set_slew_rate(255)
         leds.set_all_rgb(0, 0, 0)
-        leds.set_brightness(69)
         leds.update()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)

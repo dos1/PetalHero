@@ -192,7 +192,6 @@ class EventDispatcher:
             # uses 3 bytes to represent time between quarter 
             # notes in microseconds
             stream.tempo((b1<<16) + (b2<<8) + b3)
-        return        
         
         # SEQUENCE_NUMBER = 0x00 (00 02 ss ss (seq-number))
         if meta_type == SEQUENCE_NUMBER:
