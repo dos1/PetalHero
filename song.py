@@ -46,9 +46,10 @@ class SongView(BaseView):
             self.data = midireader.MidiReader(None)
             self.data.period = 500
             self.data.bpm = 120
-        self.delay = 2000 + AUDIO_DELAY
         self.started = False
-        self.time = -self.delay
+        self.time = -2000 - AUDIO_DELAY
+        if self.song:
+            self.time -= self.song.delay
         self.flower = flower.Flower(0)
         self.events = set()
         self.petals = [None] * 5
@@ -310,17 +311,18 @@ class SongView(BaseView):
             self.longeststreak = self.streak
 
         if not self.paused:
-            self.delay -= delta_ms
             self.time += delta_ms
 
-        if self.delay < -AUDIO_DELAY and not self.started:
+        delay = AUDIO_DELAY
+        if self.song:
+             delay -= self.song.delay
+        if self.time >= delay and not self.started:
             self.started = True
             if self.song:
                 media.load(self.song.dirName + '/song.mp3')
 
         if self.song and self.started:
-            # TODO: handle delay specified in song.ini
-            self.time = media.get_time() * 1000 + AUDIO_DELAY
+            self.time = media.get_time() * 1000 + delay
 
         if self.input.buttons.app.middle.pressed:
             if self.paused:
