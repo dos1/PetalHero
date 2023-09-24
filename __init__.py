@@ -33,8 +33,8 @@ class PetalHero(Application):
         self.loaded = False
         self.blm = None
         self.fiba_sound = None
-        self.select = select.SelectView(self.app)
         self.after_score = False
+        self.select = None
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
         
@@ -168,6 +168,8 @@ class PetalHero(Application):
 
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
+            if not self.select:
+                self.select = select.SelectView(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
 
     def on_enter(self, vm) -> None:

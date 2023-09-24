@@ -66,6 +66,7 @@ class SongView(BaseView):
         self.events_in_margin = set()
         self.petal_events = [set() for i in range(5)]
         self.last_played = 0
+        self.last_time = 0
         
         self.good = 0.0
         self.bad = 0.0
@@ -318,6 +319,7 @@ class SongView(BaseView):
                 media.load(self.song.dirName + '/song.mp3')
 
         if self.song and self.started:
+            # TODO: handle delay specified in song.ini
             self.time = media.get_time() * 1000 + AUDIO_DELAY
 
         if self.input.buttons.app.middle.pressed:
@@ -333,9 +335,13 @@ class SongView(BaseView):
 
         if self.input.buttons.app.right.pressed:
             self.demo_mode = not self.demo_mode
+            if self.demo_mode:
+                media.set_volume(1.0)
 
         if self.paused:
             return
+        
+        delta_time = self.time - self.last_time
 
         self.good = max(0, self.good - delta_ms / self.data.period)
         self.bad = max(0, self.bad - delta_ms / 500)
@@ -345,7 +351,7 @@ class SongView(BaseView):
             self.petal_events[i].clear()
 
         earlyMargin       = 60000.0 / self.data.bpm / 3.5
-        lateMargin        = 60000.0 / self.data.bpm / 3.5 + delta_ms
+        lateMargin        = 60000.0 / self.data.bpm / 3.5 + delta_time
 
         self.notes.clear()
         self.events_in_margin.clear()
@@ -359,7 +365,7 @@ class SongView(BaseView):
             if isinstance(event, midireader.Note):
                 if event.time <= self.time <= event.time + event.length:
                     self.notes.add(event.number)
-                if event.time - earlyMargin <= self.time <= event.time + lateMargin:
+                if self.time - lateMargin <= event.time <= self.time + earlyMargin:
                     self.events_in_margin.add(event)
                     if not event.played:
                         self.petal_events[event.number].add(event)
@@ -369,7 +375,7 @@ class SongView(BaseView):
                     if not self.demo_mode:
                         self.missed[event.number] = 1.0
                         self.miss = 1.0
-                        if event.time >= self.last_played:
+                        if event.time >= self.last_played and not self.demo_mode:
                             media.set_volume(0.25)
                 if event.played and event.time + event.length - lateMargin > self.time:
                     p = 4 if event.number == 0 else event.number - 1
@@ -391,21 +397,28 @@ class SongView(BaseView):
                     self.bad = 1.0
                     self.streak = 0
                 else:
-                    event = events.pop()
-                    for e in events:
-                        if e.time < event.time:
-                            event = e
-                    #event = sorted(events, key = lambda x: x.time)[0]
-                    event.played = True
-                    self.led_override[petal] = 50
-                    if event.time > self.laststreak:
+                    main_event = min(events, key=lambda x: abs(self.time - x.time))
+                    # mark event as played, and also previous events since the last think
+                    main_event.played = True
+                    for event in events:
+                        if event.played: continue
+                        if event.time <= main_event.time - delta_ms:
+                            event.played = True
+                            if event.time > self.laststreak:
+                                # TODO: correctly handle chords
+                                self.streak += 1
+                    
+                    if main_event.time > self.laststreak:
                         self.streak += 1
                         self.laststreak = event.time
                         if self.debug:
                             print(self.time - event.time)
-                    self.petals[petal] = event
+
+                    self.laststreak = main_event.time
+                    self.led_override[petal] = 50
+                    self.petals[petal] = main_event
                     self.good = 1.0
-                    self.last_played = event.time
+                    self.last_played = main_event.time
                     media.set_volume(1.0)
 
             if not pressed:
@@ -419,6 +432,8 @@ class SongView(BaseView):
         leds.update()
         #gc.collect()
         #print("think", gc.mem_alloc() - mem)
+        
+        self.last_time = self.time
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
@@ -427,7 +442,7 @@ class SongView(BaseView):
             return
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
-            utils.volume(self.app, 10000)
+            utils.volume(self.app, 8000)
         leds.set_slew_rate(238)
             
     def on_enter_done(self):

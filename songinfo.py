@@ -3,20 +3,41 @@ import os
 import midi
 import midireader
 
-from midireader import difficulties, noteSet
+from midireader import difficulties, noteSet, noteMap
 
 class MidiInfoReader(midi.MidiOutStream):
-  __slots__ = ("notes", )
-    
+  __slots__ = ("difficulties", "nTracks", "ignored", "trackNo")
+      
   # We exit via this exception so that we don't need to read the whole file in
   class Done(Exception): pass
   
   def __init__(self):
     super().__init__()
-    self.notes = set()
+    self.difficulties = set()
+    self.ignored = False
+    self.nTracks = 0
+    self.trackNo = -1
+    
+  def start_of_track(self, track):
+    self.trackNo = track
+
+  def header(self, format, nTracks, division):
+    self.nTracks = nTracks
+
+  def sequence_name(self, val):
+    name = ''.join(list(map(chr, val)))
+    self.ignored = name != "PART GUITAR" and self.nTracks > 2
+    if self.difficulties:
+      raise MidiInfoReader.Done()
+    return self.ignored
 
   def note_on(self, channel, note, velocity):
-    self.notes.add(note)
+    if not self.ignored:
+      if not note in noteMap:
+        return
+      self.difficulties.add(difficulties[noteMap[note][0]])
+      if len(self.difficulties) == len(difficulties):
+        raise MidiInfoReader.Done()
 
 class SongInfo(object):
   def __init__(self, dirName):
@@ -54,7 +75,7 @@ class SongInfo(object):
     if self._difficulties is not None:
       return self._difficulties
 
-    diffFileName = os.path.join(os.path.dirname(self.fileName), "diffs.pet")
+    diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")
     try:
       with open(diffFileName, "rb") as f:
         self._difficulties = []
@@ -78,17 +99,7 @@ class SongInfo(object):
     except MidiInfoReader.Done:
       pass
     
-    diffset = set()
-    for note in info.notes:
-      if not note in noteSet:
-          continue
-      track, number = midireader.noteMap[note]
-      diff = difficulties[track]
-      if not diff in diffset:
-          diffset.add(diff)
-          if len(diffset) == len(difficulties):
-              break
-    self._difficulties = list(diffset)
+    self._difficulties = list(info.difficulties)
     self._difficulties.sort(key = lambda a: a.id, reverse=True)
     #except Exception as e:
     #  print(e)
@@ -96,10 +107,10 @@ class SongInfo(object):
     return self._difficulties
 
   def saveDifficulties(self):
-    if self._difficulties is None:
+    if not self._difficulties:
       return
     try:
-      diffFileName = os.path.join(os.path.dirname(self.fileName), "diffs.pet")
+      diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")
       with open(diffFileName, "wb") as f:
         for diff in self._difficulties:
           f.write(bytes([diff.id]))

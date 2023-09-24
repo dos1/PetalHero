@@ -13,6 +13,21 @@ import difficulty
 import songinfo
 import utils
 
+class LazySong(songinfo.SongInfo):
+    def __init__(self, dirpath):
+        self.dirpath = dirpath
+        self.loaded = False
+        
+    def load(self):
+        if not self.loaded:
+            try:
+                super().__init__(self.dirpath)
+            except Exception as e:
+                print(f"Failed to read the song from {inipath}: {e}")
+            self.loaded = True
+        return self
+
+
 def discover_songs(path: str):
     path = path.rstrip("/")
     try:
@@ -37,21 +52,16 @@ def discover_songs(path: str):
         except Exception:
             continue
 
-        try:
-            s = songinfo.SongInfo(dirpath)
-        except Exception as e:
-            print(f"Failed to read the song from {inipath}: {e}")
-            continue
-        
-        inipath = dirpath + "/diffs.pet"
+        s = LazySong(dirpath)
+        songs.append(s)
+
+        inipath = dirpath + "/.diff.pet"
         try:
             st = os.stat(inipath)
             if not stat.S_ISREG(st[0]):
                 to_process.append(s)
         except Exception:
             to_process.append(s)
-
-        songs.append(s)
 
     return songs, to_process
 
@@ -81,6 +91,7 @@ class SelectView(BaseView):
         ctx.restore()
         
         if self.processing_now:
+            self.processing_now.load()
             self.processing_now.getDifficulties()
             self.processing_now.saveDifficulties()
             self.processing_now = None
@@ -144,6 +155,7 @@ class SelectView(BaseView):
 
             distance = self._sc.current_position() - idx
             if abs(distance) <= 3:
+                song.load()
                 xpos = 0.0
                 ctx.font_size = 24 - abs(distance) * 3
                 if target and (width := ctx.text_width(song.name)) > 220:
@@ -209,7 +221,8 @@ class SelectView(BaseView):
         if pos > len(self.songs) - 1: pos = len(self.songs) - 1
 
         if pos != cur_target:
-            media.load(self.songs[pos].dirName + "/song.mp3")
+            song = self.songs[pos].load()
+            media.load(song.dirName + "/song.mp3")
 
         if media.get_position() == media.get_duration():
             media.seek(0)
@@ -229,7 +242,8 @@ class SelectView(BaseView):
 
     def play(self):
         if self.songs:
-            media.load(self.songs[self._sc.target_position()].dirName + "/song.mp3")
+            song = self.songs[self._sc.target_position()].load()
+            media.load(song.dirName + "/song.mp3")
         else:
             media.stop()
 

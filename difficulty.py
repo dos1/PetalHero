@@ -52,6 +52,11 @@ class DifficultyView(BaseView):
         ctx.text_baseline = ctx.MIDDLE
 
         ctx.move_to(0, 0)
+        if not self.song.difficulties:
+            ctx.gray(0.0)
+            ctx.font_size = 24
+            ctx.text("No guitar track found!")
+
         for idx, diff in enumerate(self.song.difficulties):
             target = idx == self._sc.target_position()
             if target:
@@ -121,8 +126,9 @@ class DifficultyView(BaseView):
             
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
-            media.stop()
-            self.vm.replace(loading.LoadingView(self.app, self.song, self.song.difficulties[self._sc.target_position()]), ViewTransitionBlend())
+            if self.song.difficulties:
+                media.stop()
+                self.vm.replace(loading.LoadingView(self.app, self.song, self.song.difficulties[self._sc.target_position()]), ViewTransitionBlend())
 
     def on_exit(self):
         super().on_exit()

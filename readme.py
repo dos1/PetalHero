@@ -3,8 +3,10 @@ import os
 
 README = """Put your Petal Hero songs here.
 
-Petal Hero is compatible with songs for Frets on Fire, but with
-one caveat: you need to mix audio tracks and save them as MP3.
+Petal Hero is compatible with songs for Frets on Fire, FoFiX, Performous,
+Phase Shift and Clone Hero (MIDI) that contain a guitar track, but with one
+caveat: you need to mix audio tracks and save them as MP3.
+
 This should do:
 
   sox -m *.ogg -c 1 -C 128 -r 48k song.mp3 norm -3
