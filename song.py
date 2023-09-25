@@ -307,7 +307,7 @@ class SongView(BaseView):
             self.finished = True
             media.stop()
             gc.collect()
-            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak), ViewTransitionBlend())
+            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak, self.difficulty), ViewTransitionBlend())
             return
 
         if self.streak > self.longeststreak:

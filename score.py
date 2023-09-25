@@ -14,13 +14,14 @@ if __name__ == '__main__':
 
 import flower
 import utils
-import midireader
+from midireader import difficulties
 
 class ScoreView(BaseView):
-    def __init__(self, app, data, streak):
+    def __init__(self, app, data, streak, difficulty):
         super().__init__()
         self.app = app
         self.data = data
+        self.difficulty = difficulty
         self.flower = flower.Flower(0)
         self.time = 0
         self.streak = streak
@@ -29,7 +30,7 @@ class ScoreView(BaseView):
             self.accuracy = 0.42
         else:
             events = data.track.getAllEvents()
-            self.accuracy = len(set(filter(lambda x: isinstance(x, midireader.Note) and x.played, events))) / len(events)
+            self.accuracy = len(set(filter(lambda x: x.played, events))) / len(events)
         self.stars = int(5.0 * (self.accuracy + 0.05))
 
     def draw(self, ctx: Context) -> None:
@@ -54,7 +55,14 @@ class ScoreView(BaseView):
         ctx.text_align = ctx.CENTER
         ctx.text_baseline = ctx.MIDDLE
 
-        ctx.move_to(0, 0)
+        ctx.font_size = 16
+        ctx.rgba(0.2, 0.2, 0.2, 0.69)
+        w = ctx.text_width(self.difficulty.text) + 10
+        ctx.round_rectangle(-w / 2, -8, w, 18, 8)
+        ctx.fill()
+        ctx.gray(0.8)
+        ctx.move_to(0, 2)
+        ctx.text(self.difficulty.text)
 
         ctx.restore()
         
@@ -62,6 +70,8 @@ class ScoreView(BaseView):
         ctx.rectangle(-120, 65, 240, 55)
         ctx.fill()
         """
+        
+        
         utils.fire_gradient(ctx)
         
         ctx.font = "Camp Font 1"
@@ -126,5 +136,5 @@ class ScoreView(BaseView):
             utils.play_go(self.app)
 
 if __name__ == '__main__':
-    view = ScoreView(None, None, 420)
+    view = ScoreView(None, None, 420, difficulties[2])
     st3m.run.run_view(view)
