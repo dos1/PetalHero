@@ -7,7 +7,7 @@ import leds
 import sys_display
 import sys_scope
 from micropython import const
-from time import ticks_ms
+from time import ticks_ms, sleep
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
@@ -268,6 +268,9 @@ class SongView(BaseView):
         #print("draw", gc.mem_alloc() - mem)
         #t = ticks_ms()
         #print(ticks_ms() - t)
+        
+        #gc.collect()
+        #sleep(0.2)
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         #mem = gc.mem_alloc()
@@ -344,6 +347,7 @@ class SongView(BaseView):
             return
         
         delta_time = self.time - self.last_time
+        delta_ms = min(delta_ms, 100)
 
         self.good = max(0, self.good - delta_ms / self.data.period)
         self.bad = max(0, self.bad - delta_ms / 500)
@@ -364,25 +368,25 @@ class SongView(BaseView):
             self.events.clear()
         
         for event in self.events:
-            if isinstance(event, midireader.Note):
-                if event.time <= self.time <= event.time + event.length:
-                    self.notes.add(event.number)
-                if self.time - lateMargin <= event.time <= self.time + earlyMargin:
-                    self.events_in_margin.add(event)
-                    if not event.played:
-                        self.petal_events[event.number].add(event)
-                if event.time + lateMargin < self.time and not event.played and not event.missed:
+            if event.time <= self.time <= event.time + event.length:
+                self.notes.add(event.number)
+            if self.time - lateMargin <= event.time <= self.time + earlyMargin:
+                self.events_in_margin.add(event)
+                if not event.played:
+                    self.petal_events[event.number].add(event)
+            if event.time + lateMargin < self.time and not event.played and not event.missed:
+                event.missed = True
+                self.streak = 0
+                if not self.demo_mode:
+                    self.missed[event.number] = 1.0
+                    self.miss = 1.0
+                    if event.time >= self.last_played and not self.demo_mode:
+                        media.set_volume(0.25)
+            if event.played and min(event.time + event.length - lateMargin * 2, event.time + 0.66 * event.length) > self.time:
+                p = 4 if event.number == 0 else event.number - 1
+                if not ins.captouch.petals[p*2].pressed and not event.missed:
                     event.missed = True
-                    self.streak = 0
-                    if not self.demo_mode:
-                        self.missed[event.number] = 1.0
-                        self.miss = 1.0
-                        if event.time >= self.last_played and not self.demo_mode:
-                            media.set_volume(0.25)
-                if event.played and event.time + event.length - lateMargin > self.time:
-                    p = 4 if event.number == 0 else event.number - 1
-                    if not ins.captouch.petals[p*2].pressed and not event.missed:
-                        event.missed = True
+                    media.set_volume(0.25)
 
         leds.set_all_rgb(0, 0, 0)
 
@@ -399,29 +403,34 @@ class SongView(BaseView):
                     self.bad = 1.0
                     self.streak = 0
                 else:
-                    main_event = min(events, key=lambda x: abs(self.time - x.time))
-                    # mark event as played, and also previous events since the last think
-                    main_event.played = True
-                    for event in events:
-                        if event.played: continue
-                        if event.time <= main_event.time - delta_ms:
-                            event.played = True
-                            if event.time > self.laststreak:
-                                # TODO: correctly handle chords
-                                self.streak += 1
+                    event = min(events, key=lambda x: abs(self.time - x.time))
                     
-                    if main_event.time > self.laststreak:
-                        self.streak += 1
-                        self.laststreak = event.time
-                        if self.debug:
-                            print(self.time - event.time)
+                    # is it part of a chord with already released notes?
+                    bad_chord = False
+                    for e in self.events_in_margin:
+                        if e != event and e.time == event.time and e.missed:
+                            bad_chord = True
+                            break
+                        
+                    if bad_chord:
+                        utils.play_fiba(self.app)
+                        self.bad = 1.0
+                        self.streak = 0
+                    else:
+                        event.played = True
+                        
+                        if event.time > self.laststreak:
+                            self.streak += 1
+                            self.laststreak = event.time
+                            if self.debug:
+                                print(self.time - event.time)
 
-                    self.laststreak = main_event.time
-                    self.led_override[petal] = 50
-                    self.petals[petal] = main_event
-                    self.good = 1.0
-                    self.last_played = main_event.time
-                    media.set_volume(1.0)
+                        self.laststreak = event.time
+                        self.led_override[petal] = 50
+                        self.petals[petal] = event
+                        self.good = 1.0
+                        self.last_played = event.time
+                        media.set_volume(1.0)
 
             if not pressed:
                 self.petals[petal] = None
@@ -430,6 +439,21 @@ class SongView(BaseView):
             d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else (1.0 if petal in self.notes and self.demo_mode else 0.069))
             if d:
                 utils.petal_leds(petal, d)
+
+        # if there were several events in-between think calls, we have no idea
+        # whether they were played correctly or not. let's be generous to the
+        # player and assume they were
+        now = max(self.last_played, self.time)
+        for event in self.events_in_margin:
+            p = 4 if event.number == 0 else event.number - 1
+            if not self.petals[p] or event.time >= self.petals[p].time: continue
+            if event.played or event.time >= now or event.time < now - delta_time: continue
+            event.played = True
+            # mark chords as played too already so we only count streak once
+            for e in self.events_in_margin:
+                if not event.played and e.time == event.time:
+                    e.played = True
+            self.streak += 1
 
         leds.update()
         #gc.collect()
