@@ -480,6 +480,7 @@ class SongView(BaseView):
         self.first_think = True
         if self.vm.direction == ViewTransitionDirection.FORWARD: # self-pushed
             return
+        media.set_volume(1.0)
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
             utils.volume(self.app, 8000)

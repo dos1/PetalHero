@@ -259,11 +259,6 @@ class SelectView(BaseView):
         if pos < 0: pos = 0
         if pos > len(self.songs) - 1: pos = len(self.songs) - 1
 
-        if pos != cur_target:
-            song = self.songs[pos].load()
-            media.load(song.dirName + "/song.mp3")
-            self.first_scroll_think = True
-
         if media.get_position() == media.get_duration():
             media.seek(0)
 
@@ -277,6 +272,14 @@ class SelectView(BaseView):
             self.first_scroll_think = False
         else:
             self._sc.think(ins, delta_ms)
+            media.set_volume(min(1.0, media.get_volume() + delta_ms / 1000))
+            
+        if pos != cur_target:
+            song = self.songs[pos].load()
+            media.load(song.dirName + "/song.mp3")
+            media.seek(media.get_duration() * 0.1)
+            media.set_volume(0.0)
+            self.first_scroll_think = True
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
@@ -290,6 +293,9 @@ class SelectView(BaseView):
         if self.songs:
             song = self.songs[self._sc.target_position()].load()
             media.load(song.dirName + "/song.mp3")
+            media.seek(media.get_duration() * 0.1)
+            media.set_volume(0.0)
+            self.first_scroll_think = True
         else:
             media.stop()
 

@@ -115,6 +115,8 @@ class DifficultyView(BaseView):
             self._sc.think(ins, delta_ms)
             return
 
+        media.set_volume(min(1.0, media.get_volume() + delta_ms / 1000))
+
         if self.input.buttons.app.left.pressed or self.input.buttons.app.left.repeated:
             self._sc.scroll_left()
             self._scroll_pos = 0.0

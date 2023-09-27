@@ -181,6 +181,7 @@ class PetalHero(Application):
             self.load()
         else:
             self.blm.foreground = True
+        media.set_volume(1.0)
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
         leds.set_slew_rate(255)
