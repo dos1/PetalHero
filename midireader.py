@@ -124,6 +124,9 @@ class MidiReader(midi.MidiOutStream):
     self.track = Track()
     self.nTracks = -1
     self.ignored = False
+    
+    self.current_tempo_marker = 0
+    self.scaledTime = 0
 
   def addEvent(self, track, event):
     time = event.time
@@ -139,26 +142,27 @@ class MidiReader(midi.MidiOutStream):
     #elif track < len(self.tracks):
     #  self.tracks[track].addEvent(time, event)
 
-  def abs_time(self):
-    def ticksToBeats(ticks, bpm):
-      return (60000.0 * ticks) / (bpm * self.ticksPerBeat)
+  def ticksToBeats(self, ticks, bpm):
+    return (60000.0 * ticks) / (bpm * self.ticksPerBeat)
 
+  def abs_time(self):
     if self.bpm:
       currentTime = midi.MidiOutStream.abs_time(self)
 
-      # Find out the current scaled time.
-      # Yeah, this is reeally slow, but fast enough :)
-      scaledTime      = 0.0
-      tempoMarkerTime = 0.0      # Find out the current scaled time.
+      if self.current_tempo_marker == 0:
+        tempoMarkerTime, currentBpm = 0.0, self.bpm 
+      else:
+        tempoMarkerTime, currentBpm = self.tempoMarkers[self.current_tempo_marker - 1]
 
-      currentBpm      = self.bpm
-      for i in range(len(self.tempoMarkers)):
-        time, bpm = self.tempoMarkers[i]
+      while len(self.tempoMarkers) > self.current_tempo_marker:
+        time, bpm = self.tempoMarkers[self.current_tempo_marker]
         if time > currentTime:
           break
-        scaledTime += ticksToBeats(time - tempoMarkerTime, currentBpm)
+        self.scaledTime += self.ticksToBeats(time - tempoMarkerTime, currentBpm)
+        self.current_tempo_marker += 1
         tempoMarkerTime, currentBpm = time, bpm
-      return scaledTime + ticksToBeats(currentTime - tempoMarkerTime, currentBpm)
+
+      return self.scaledTime + self.ticksToBeats(currentTime - tempoMarkerTime, currentBpm)
     return 0.0
 
   def header(self, format, nTracks, division):

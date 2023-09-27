@@ -1,6 +1,6 @@
 from st3m.ui.view import BaseView, ViewTransitionBlend
 import gc
-import sys_display
+import time
 
 import song
 import utils
@@ -43,5 +43,10 @@ class LoadingView(BaseView):
         utils.blm_timeout(self, delta_ms)
         if self.vm.transitioning or not self.is_active(): return
         #gc.collect()
-        self.vm.replace(song.SongView(self.app, self.song, self.difficulty), ViewTransitionBlend())
+        t = time.ticks_ms()
+        view = song.SongView(self.app, self.song, self.difficulty)
+        t = time.ticks_ms() - t
+        if t < 2000:
+            time.sleep_ms(2000 - t)
+        self.vm.replace(view, ViewTransitionBlend())
         gc.collect()
