@@ -50,8 +50,8 @@ class SongInfo(object):
 
     try:
       self.info.read(infoFileName)
-    except:
-      pass
+    except Exception as e:
+      print(e)
 
   def _set(self, attr, value):
     if not self.info.has_section("song"):
@@ -107,7 +107,7 @@ class SongInfo(object):
     return self._difficulties
 
   def saveDifficulties(self):
-    if not self._difficulties:
+    if self._difficulties is None:
       return
     try:
       diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")

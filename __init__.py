@@ -34,7 +34,7 @@ class PetalHero(Application):
         self.blm = None
         self.fiba_sound = None
         self.after_score = False
-        self.select = None
+        self.select = select.SelectView(self.app)
         #self.blm_extra = bl00mbox.Channel("Petal Hero Extra")
         #self.blm_extra.background_mute_override = True
         
@@ -124,6 +124,9 @@ class PetalHero(Application):
         ctx.gray(1.0)
         ctx.move_to(0, 70 + math.sin(self.time * 4) * 4)
         ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
+        
+        if self.is_active():
+            self.select.discover(50, False)
 
     def unload(self):
         if not self.loaded:
@@ -168,8 +171,6 @@ class PetalHero(Application):
 
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
-            if not self.select:
-                self.select = select.SelectView(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
 
     def on_enter(self, vm) -> None:
@@ -178,6 +179,8 @@ class PetalHero(Application):
             return
         if not self.loaded:
             self.load()
+        else:
+            self.blm.foreground = True
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
         leds.set_slew_rate(255)

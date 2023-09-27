@@ -2,6 +2,7 @@ from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft
 from st3m.ui.interactions import ScrollController
 import math
 import os, stat
+import time
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
@@ -23,12 +24,12 @@ class LazySong(songinfo.SongInfo):
             try:
                 super().__init__(self.dirpath)
             except Exception as e:
-                print(f"Failed to read the song from {inipath}: {e}")
+                print(f"Failed to read the song from {self.dirpath}: {e}")
             self.loaded = True
         return self
 
 
-def discover_songs(path: str):
+def discover_songs(path: str, songs, to_process):
     path = path.rstrip("/")
     try:
         l = os.listdir(path)
@@ -36,8 +37,6 @@ def discover_songs(path: str):
         print(f"Could not discover songs in {path}: {e}")
         l = []
 
-    songs = []
-    to_process = []
     for d in l:
         dirpath = path + "/" + d
         st = os.stat(dirpath)
@@ -62,9 +61,8 @@ def discover_songs(path: str):
                 to_process.append(s)
         except Exception:
             to_process.append(s)
-
-    return songs, to_process
-
+            
+        yield s
 
 class SelectView(BaseView):
     def __init__(self, app):
@@ -72,12 +70,29 @@ class SelectView(BaseView):
         self.app = app
         self.flower = flower.Flower(0.001)
         self._sc = ScrollController()
-        self.songs, self.to_process = discover_songs("/sd/PetalHero")
-        self.total_process = len(self.to_process)
+        self.songs = []
+        self.to_process = []
+        self.discovery_iter = discover_songs("/sd/PetalHero", self.songs, self.to_process)
         self.processing_now = None
-        self._sc.set_item_count(len(self.songs))
+        self.loading = True
         self._scroll_pos = 0
         self.pos = -1
+        self.repeat_count = 0
+        self.first_scroll_think = False
+        
+    def discover(self, timeout = 100, play = True):
+        if not self.loading:
+            return
+        try:
+            start = time.ticks_ms()
+            while time.ticks_ms() - start <= timeout:
+                next(self.discovery_iter)
+        except StopIteration:
+            self.total_process = len(self.to_process)
+            self._sc.set_item_count(len(self.songs))
+            self.loading = False
+            if not self.to_process and play:
+                self.play()
 
     def draw(self, ctx: Context) -> None:
         
@@ -90,7 +105,7 @@ class SelectView(BaseView):
         self.flower.draw(ctx)
         ctx.restore()
         
-        if self.processing_now:
+        if self.processing_now and self.is_active():
             self.processing_now.load()
             self.processing_now.getDifficulties()
             self.processing_now.saveDifficulties()
@@ -98,7 +113,7 @@ class SelectView(BaseView):
             if not self.to_process:
                 self.play()
             
-        if self.to_process:
+        if self.to_process and not self.loading:
             if not self.vm.transitioning:
                 self.processing_now = self.to_process.pop()
 
@@ -123,50 +138,64 @@ class SelectView(BaseView):
 
             return
         
-        ctx.save()
-        ctx.gray(1.0)
-        ctx.rectangle(
-            -120.0,
-            -15.0,
-            240.0,
-            30.0,
-        ).fill()
+        if self.loading:
+            ctx.gray(1.0)
+            ctx.move_to(0,0)
+            
+            ctx.font = "Camp Font 3"
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.font_size = 18
+            ctx.text("Loading...")
+            
+            if self.is_active():
+                self.discover()
+        else:
+            
+            ctx.save()
+            ctx.gray(1.0)
+            ctx.rectangle(
+                -120.0,
+                -15.0,
+                240.0,
+                30.0,
+            ).fill()
 
-        ctx.translate(0, -30 * self._sc.current_position())
+            ctx.translate(0, -30 * self._sc.current_position())
 
-        offset = 0
+            offset = 0
 
-        ctx.font = "Camp Font 3"
-        ctx.text_align = ctx.CENTER
-        ctx.text_baseline = ctx.MIDDLE
+            ctx.font = "Camp Font 3"
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
 
-        ctx.move_to(0, 0)
-        if not self.songs:
-            ctx.gray(0.0)
-            ctx.font_size = 24
-            ctx.text("No songs found!")
-
-        for idx, song in enumerate(self.songs):
-            target = idx == self._sc.target_position()
-            if target:
+            ctx.move_to(0, 0)
+            if not self.songs:
                 ctx.gray(0.0)
-            else:
-                ctx.gray(1.0)
+                ctx.font_size = 24
+                ctx.text("No songs found!")
 
-            distance = self._sc.current_position() - idx
-            if abs(distance) <= 3:
-                song.load()
-                xpos = 0.0
-                ctx.font_size = 24 - abs(distance) * 3
-                if target and (width := ctx.text_width(song.name)) > 220:
-                    xpos = math.sin(self._scroll_pos) * (width - 220) / 2
-                ctx.move_to(xpos, offset + distance * abs(distance) * 2)
-                ctx.global_alpha = max(0.0, 1.0 - abs(distance) / 2.5)
-                ctx.text(song.name)
-                ctx.global_alpha = 1.0
-            offset += 30
+            for idx, song in enumerate(self.songs):
+                distance = self._sc.current_position() - idx
+                target = idx == self._sc.target_position()
+                if target:
+                    ctx.gray(0.0)
+                else:
+                    ctx.gray(0.5 + min(abs(distance / 2), 0.5))
 
-        ctx.restore()
+                if abs(distance) <= 3:
+                    song.load()
+                    xpos = 0.0
+                    ctx.font_size = 24 - abs(distance) * 3
+                    if target and (width := ctx.text_width(song.name)) > 220:
+                        xpos = math.sin(self._scroll_pos) * (width - 220) / 2
+                    ctx.move_to(xpos, offset + distance * abs(distance) * 2)
+                    ctx.global_alpha = max(0.0, 1.0 - abs(distance) / 2.5)
+                    ctx.text(song.name)
+                    ctx.global_alpha = 1.0
+                offset += 30
+
+            ctx.restore()
         
         ctx.rgba(1.0, 1.0, 1.0, 0.05)
         ctx.rectangle(-120, -120, 240, 55)
@@ -193,7 +222,6 @@ class SelectView(BaseView):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
-        self._sc.think(ins, delta_ms)
         utils.blm_timeout(self, delta_ms)
         if not self.to_process and not self.processing_now:
             media.think(delta_ms)
@@ -205,16 +233,27 @@ class SelectView(BaseView):
         if cur_target > len(self.songs) - 1: cur_target = len(self.songs) - 1
 
         if not self.is_active():
+            self._sc.think(ins, delta_ms)
+            return
+        
+        if self.processing_now or self.to_process or self.loading:
             return
 
-        if self.input.buttons.app.left.pressed or self.input.buttons.app.left.repeated:
-            self._sc.scroll_left()
+        if self.input.buttons.app.left.pressed or (self.input.buttons.app.left.repeated and not self._sc.at_left_limit()):
+            utils.play_crunch(self.app)
+            for i in range(10 if self.repeat_count >= 10 else 1):
+                self._sc.scroll_left()
+            self._scroll_pos = 0.0
+        elif self.input.buttons.app.right.pressed or (self.input.buttons.app.right.repeated and not self._sc.at_right_limit()):
+            for i in range(10 if self.repeat_count >= 10 else 1):
+                self._sc.scroll_right()
             self._scroll_pos = 0.0
             utils.play_crunch(self.app)
-        elif self.input.buttons.app.right.pressed or self.input.buttons.app.right.repeated:
-            self._sc.scroll_right()
-            self._scroll_pos = 0.0
-            utils.play_crunch(self.app)
+            
+        if self.input.buttons.app.left.repeated or self.input.buttons.app.right.repeated:
+            self.repeat_count += 1
+        if self.input.buttons.app.left.released or self.input.buttons.app.right.released:
+            self.repeat_count = 0
 
         pos = self._sc.target_position()
         if pos < 0: pos = 0
@@ -223,6 +262,7 @@ class SelectView(BaseView):
         if pos != cur_target:
             song = self.songs[pos].load()
             media.load(song.dirName + "/song.mp3")
+            self.first_scroll_think = True
 
         if media.get_position() == media.get_duration():
             media.seek(0)
@@ -232,10 +272,16 @@ class SelectView(BaseView):
             if self.songs:
                 self.vm.push(difficulty.DifficultyView(self.app, self.songs[pos]), ViewTransitionSwipeLeft())
 
+        if self.first_scroll_think:
+            self._sc.think(ins, min(20, delta_ms))
+            self.first_scroll_think = False
+        else:
+            self._sc.think(ins, delta_ms)
+
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
         if self.vm.direction == ViewTransitionDirection.FORWARD or (self.app and self.app.after_score):
-            if not self.to_process:
+            if not self.to_process and not self.loading:
                 self.play()
             if self.app:
                 self.app.after_score = False

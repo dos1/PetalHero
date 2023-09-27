@@ -58,13 +58,13 @@ class DifficultyView(BaseView):
             ctx.text("No guitar track found!")
 
         for idx, diff in enumerate(self.song.difficulties):
+            distance = self._sc.current_position() - idx
             target = idx == self._sc.target_position()
             if target:
                 ctx.gray(0.0)
             else:
-                ctx.gray(1.0)
+                ctx.gray(0.5 + min(abs(distance / 2), 0.5))
 
-            distance = self._sc.current_position() - idx
             if abs(distance) <= 3:
                 xpos = 0.0
                 ctx.font_size = 24 - abs(distance) * 3
@@ -106,13 +106,13 @@ class DifficultyView(BaseView):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
-        self._sc.think(ins, delta_ms)
         media.think(delta_ms)
         self.flower.think(delta_ms)
         utils.blm_timeout(self, delta_ms)
         self._scroll_pos += delta_ms / 1000
 
         if not self.is_active():
+            self._sc.think(ins, delta_ms)
             return
 
         if self.input.buttons.app.left.pressed or self.input.buttons.app.left.repeated:
@@ -129,6 +129,8 @@ class DifficultyView(BaseView):
             if self.song.difficulties:
                 media.stop()
                 self.vm.replace(loading.LoadingView(self.app, self.song, self.song.difficulties[self._sc.target_position()]), ViewTransitionBlend())
+
+        self._sc.think(ins, delta_ms)
 
     def on_exit(self):
         super().on_exit()

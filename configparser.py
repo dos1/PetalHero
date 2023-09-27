@@ -44,13 +44,13 @@ class ConfigParser:
         elif not fp and filename:
             fp = open(filename)
 
-        content = fp.read()
+        content = fp.read().replace('\r','')
         fp.close()
-        self.config_dict = {line.replace('[','').replace(']',''):{} for line in content.replace('\r','').split('\n')\
+        self.config_dict = {line.replace('[','').replace(']','').lower():{} for line in content.split('\n')\
                 if line.startswith('[') and line.endswith(']')
                 }
 
-        striped_content = [line.strip() for line in content.replace('\r','').split('\n')]
+        striped_content = [line.strip() for line in content.split('\n') if line.strip()]
         for section in self.config_dict.keys():
             start_index = striped_content.index('[%s]' % section)
             end_flag = [line for line in striped_content[start_index + 1:] if line.startswith('[')]
@@ -59,9 +59,9 @@ class ConfigParser:
             else:
                 end_index = striped_content.index(end_flag[0])
             block = striped_content[start_index + 1 : end_index]
-            options = [line.split('=')[0].strip() for line in block if '=' in line]
+            options = [line.split('=')[0].strip().lower() for line in block if '=' in line]
             for option in options:
-                start_flag = [line for line in block if line.startswith(option) and '=' in line]
+                start_flag = [line for line in block if line.lower().startswith(option) and '=' in line]
                 start_index = block.index(start_flag[0])
                 end_flag = [line for line in block[start_index + 1:] if '=' in line]
                 if not end_flag:

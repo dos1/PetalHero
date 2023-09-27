@@ -47,13 +47,14 @@ class Event:
     self.time = time
 
 class Note(Event):
-  __slots__ = ("number", "played", "missed", "special")
+  __slots__ = ("number", "played", "missed", "ghost")
 
   def __init__(self, time, number, length, special = False):
     super().__init__(time, length)
     self.number   = number
     self.played   = False
     self.missed   = False
+    self.ghost    = False
 
   def __repr__(self):
     return "<Note #%d time: %d length: %d>" % (self.number, self.time, self.length)

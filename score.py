@@ -30,7 +30,7 @@ class ScoreView(BaseView):
             self.accuracy = 0.42
         else:
             events = data.track.getAllEvents()
-            self.accuracy = len(set(filter(lambda x: x.played, events))) / len(events)
+            self.accuracy = len(set(filter(lambda x: x.played and not x.missed, events))) / len(events)
         self.stars = int(5.0 * (self.accuracy + 0.05))
 
     def draw(self, ctx: Context) -> None:
