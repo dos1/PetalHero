@@ -65,7 +65,7 @@ class DifficultyView(BaseView):
             else:
                 ctx.gray(0.5 + min(abs(distance / 2), 0.5))
 
-            if abs(distance) <= 3:
+            if abs(distance) < 3:
                 xpos = 0.0
                 ctx.font_size = 24 - abs(distance) * 3
                 if target and (width := ctx.text_width(str(diff))) > 220:

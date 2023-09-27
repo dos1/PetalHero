@@ -298,7 +298,8 @@ class SongView(BaseView):
         media.think(delta_ms)
 
         if self.input.buttons.os.middle.pressed and not self.is_active():
-            self.vm.pop(ViewTransitionSwipeRight())
+            while not self.vm.is_active(self.app):
+                self.vm.pop(ViewTransitionSwipeRight())
 
         if not self.is_active():
             return
