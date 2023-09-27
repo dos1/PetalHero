@@ -52,6 +52,7 @@ def discover_songs(path: str, songs, to_process):
             continue
 
         s = LazySong(dirpath)
+        s.load()
         songs.append(s)
 
         inipath = dirpath + "/.diff.pet"
@@ -91,6 +92,7 @@ class SelectView(BaseView):
             self.total_process = len(self.to_process)
             self._sc.set_item_count(len(self.songs))
             self.loading = False
+            self.songs.sort(key=lambda x: x.name)
             if not self.to_process and play:
                 self.play()
 
