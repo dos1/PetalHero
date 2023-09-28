@@ -82,6 +82,7 @@ class SelectView(BaseView):
         self.pos = -1
         self.repeat_count = 0
         self.first_scroll_think = False
+        self.letter_timeout = 0
         
     def _discover_songs(self):
         dirs = {"/sd/PetalHero", "/flash/PetalHero", self.app.path + "/songs"}
@@ -113,7 +114,7 @@ class SelectView(BaseView):
         ctx.rgba(0.1, 0.4, 0.3, 0.42)
         self.flower.draw(ctx)
         ctx.restore()
-        
+                
         if self.processing_now and self.is_active():
             self.processing_now.load()
             self.processing_now.getDifficulties()
@@ -229,8 +230,9 @@ class SelectView(BaseView):
         ctx.gray(0.75)
         ctx.text("/sd/PetalHero")
         
-        if self.songs:
-            if abs(self._sc.target_position() - self._sc.current_position()) > 4:
+        if self.songs and not self.processing_now and not self.to_process and not self.loading:
+            if abs(self._sc.target_position() - self._sc.current_position()) > 4 or self.letter_timeout > 0:
+                ctx.global_alpha = min(1.0, self.letter_timeout * 2)
                 ctx.gray(0.2)
                 ctx.round_rectangle(-105, -25, 50, 50, 10)
                 ctx.fill()
@@ -261,25 +263,31 @@ class SelectView(BaseView):
         if self.processing_now or self.to_process or self.loading:
             return
 
+        if self.letter_timeout > 0:
+            self.letter_timeout -= delta_ms / 1000.0
+
         if self.input.buttons.app.left.pressed or (self.input.buttons.app.left.repeated and not self._sc.at_left_limit()):
             utils.play_crunch(self.app)
             if self.input.buttons.app.left.pressed:
                 self._sc.scroll_left()
             else:
-                self._sc.scroll_to(self._sc.target_position() - (5 if self.repeat_count > 5 else 1))
+                self._sc.scroll_to(self._sc.target_position() - (4 if self.repeat_count > 4 else 1))
             self._scroll_pos = 0.0
         elif self.input.buttons.app.right.pressed or (self.input.buttons.app.right.repeated and not self._sc.at_right_limit()):
             utils.play_crunch(self.app)
             if self.input.buttons.app.right.pressed:
                 self._sc.scroll_right()
             else:
-                self._sc.scroll_to(self._sc.target_position() + (5 if self.repeat_count > 5 else 1))
+                self._sc.scroll_to(self._sc.target_position() + (4 if self.repeat_count > 4 else 1))
             self._scroll_pos = 0.0
             
         if self.input.buttons.app.left.repeated or self.input.buttons.app.right.repeated:
             self.repeat_count += 1
         if self.input.buttons.app.left.released or self.input.buttons.app.right.released:
             self.repeat_count = 0
+
+        if abs(self._sc.target_position() - self._sc.current_position()) > 4:
+            self.letter_timeout = 1
 
         pos = self._sc.target_position()
         if pos < 0: pos = 0
