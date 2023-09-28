@@ -25,8 +25,10 @@ import flower
 import score
 import gc
 
-AUDIO_DELAY = const(150) # approximate audio startup delay
-VIDEO_DELAY = const(90) # delay between audio+input and what's displayed on the screen
+AUDIO_DELAY = const(150) # approximate audio startup delay, ms
+VIDEO_DELAY = const(40) # delay between audio and what's displayed on the screen
+INPUT_DELAY = const(30) # additional headroom for input handling
+DELTA_THRESHOLD = const(60) # above this we assume that there may be missed release events
 RADIUS = const(22)
 tau = const(6.283185307179586)
 
@@ -44,10 +46,11 @@ class SongView(BaseView):
             midiIn.read()
         else:
             self.data = midireader.MidiReader(None)
-            self.data.period = 500
             self.data.bpm = 120
+            self.data.period = 60000.0 / self.data.bpm
+            self.data.tempoMarkers = [(0, self.data.bpm)]
         self.started = False
-        self.time = -1800
+        self.time = -max(1800, self.data.period * 4)
         if self.song:
             self.time -= self.song.delay
         self.flower = flower.Flower(0)
@@ -69,35 +72,76 @@ class SongView(BaseView):
         self.last_played = None
         self.last_played_petal = [None] * 5
         self.last_time = 0
+        self.last_state = [False] * 5
         
         self.good = 0.0
         self.bad = 0.0
         self.missed = [0.0] * 5
+        self.bads = [0.0] * 5
         self.miss = 0.0
 
         #self.oldmem = 0
         #self.redraw = True
         #self.acc = 0
+        
+        self.beat_point = 0
+        self.tempo_mark = 0
+        self.bpm = self.data.bpm
+        self.period = self.data.period
+        self.beat = 0
+        self.beats = []
+        
+        self.mid_bpm = (max(self.data.tempoMarkers, key=lambda x: x[1])[1] + min(self.data.tempoMarkers, key=lambda x: x[1])[1]) / 2
+        self.mid_period = 60000.0 / self.mid_bpm
+
+    def _next_beat_at(self, time):
+        # assumes that given time isn't earlier than self.time
+        beat_point = self.beat_point
+        period = self.period
+        tempo_mark = self.tempo_mark
+
+        cur_beat = beat_point + (time - self.data.tempoMarkers[tempo_mark][0]) / period
+        next_beat_at = time + period * (1.0 - cur_beat % 1)
+        
+        while len(self.data.tempoMarkers) > tempo_mark + 1 and next_beat_at > self.data.tempoMarkers[tempo_mark + 1][0]:
+            next_beat_at -= period
+            beat_point += (self.data.tempoMarkers[tempo_mark + 1][0] - self.data.tempoMarkers[tempo_mark][0]) / period
+            tempo_mark += 1
+            period = 60000.0 / self.data.tempoMarkers[tempo_mark][1]
+            cur_beat = beat_point + (time - self.data.tempoMarkers[tempo_mark][0]) / period
+            next_beat_at = time + period * (1.0 - cur_beat % 1)
+
+        if next_beat_at - time < 1:
+            return self._next_beat_at(next_beat_at + 1)
+
+        return next_beat_at, int(cur_beat) + 1
+
 
     def draw(self, ctx: Context) -> None:
         #mem = gc.mem_alloc()
-        #self.redraw = True
-        self.time += VIDEO_DELAY
-        
-        other = int(self.time / 2 / self.data.period) % 2
-        if self.time < 0:
-            other = not other
+        #self.redraw = True        
+        start = self.time + self.mid_period * 4
+        start_marg = start + self.mid_period * 0.25
+        stop = self.time
 
+        beat_no = self.beats[-1][1]
+        #if beat_no <= 0:
+        #    beat_no -= 2
+        other = int((abs(beat_no) / 2) % 2)
         utils.clear(ctx, (0.1 if other else 0.0) + self.miss * 0.15)
                 
         ctx.gray(0.25)
         
-        i = 1
-        while i >= 0:
+        for i in range(len(self.beats)):
+            t, no = self.beats[len(self.beats) - i - 1]
+            #if no <= 0:
+            #    no -= 2
+            if int(no) % 2:
+                continue
             #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
             #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
-            ctx.gray((0.1 if other ^ (i == 1) else 0.0) + self.miss * 0.15)
-            pos = (120-RADIUS)/2 * (i+1-(self.time/2 / self.data.period) % 1)
+            ctx.gray((0.1 * ((int((abs(no) + 1) / 2) % 2) == 0)) + self.miss * 0.15)
+            pos = (120-RADIUS) * (((t - VIDEO_DELAY) - stop) / (start - stop))
             if pos > 0:
                 #ctx.begin_path()
                 if self.debug and False:
@@ -105,8 +149,6 @@ class SongView(BaseView):
                 else:
                     ctx.arc(0, 0, RADIUS + pos, 0, tau, 0)
                     ctx.fill()
-            i -= 1
-        self.time -= VIDEO_DELAY
         
         ctx.line_width = 2
 
@@ -139,13 +181,11 @@ class SongView(BaseView):
         
         ctx.save()
         ctx.rotate(const(tau / 10 + tau / 5))
-        start = self.time + self.data.period * 4
-        stop = self.time
         for i in range(5):
             for event in self.events:
                 if not event.number == i: continue
                 if self.petals[event.number] != event or self.led_override[event.number] == 0:
-                    if not start >= event.time >= stop and not start >= (event.time + event.length) >= stop and not event.time <= stop <= (event.time + event.length):
+                    if not start_marg >= event.time >= stop and not start_marg >= (event.time + event.length) >= stop and not event.time <= stop <= (event.time + event.length):
                         continue
                 
                 chord = False
@@ -205,19 +245,17 @@ class SongView(BaseView):
 
         ctx.save()
         ctx.scale(0.42 + 0.05 * (self.good - self.miss), 0.42 + 0.05 * (self.good - self.miss))
-        self.time += VIDEO_DELAY
-        wiggle = math.cos(((self.time / self.data.period / 2) % 1) * tau) * 0.1
+        wiggle = math.cos(((self.beat / 2) % 1) * tau) * 0.1
         self.flower.rot = tau / 5 / 2 + wiggle
         ctx.rgb(0.945, 0.631, 0.769)
         self.flower.draw(ctx)
         ctx.restore()
         
-        col = 0.3 * (1.0 - ((((self.time / self.data.period) % 1)**2) * 0.75) if self.started else 0.0)
+        col = 0.3 * (1.0 - ((((self.beat) % 1)**2) * 0.75))
         ctx.rgb(min(1.0, col + self.bad * 0.75), col + self.bad * 0.1, col + self.bad * 0.2)
         ctx.begin_path()
         ctx.arc(0, 0, 10 * (1.0 + 0.05 * (self.good - self.miss)), 0, tau, 0)
         ctx.fill()
-        self.time -= VIDEO_DELAY
         
         ctx.save()
         ctx.rgb(0.5 + self.bad * 0.4, 0.5, 0.5)
@@ -241,6 +279,18 @@ class SongView(BaseView):
             ctx.move_to(-120, 0)
             ctx.line_to(120, 0)
             ctx.stroke()
+        ctx.restore()
+        
+        ctx.save()
+        ctx.rotate(tau / 10 + tau / 5)
+        for petal in range(5):
+            ctx.rgba(1.0, 0.0, 0.0, self.bads[petal] * 0.75)
+            ctx.line_width = 2
+            arc = tau/10
+            if self.bads[petal]:
+                ctx.arc(0, 0, 10 * (1.0 + 0.05 * (self.good - self.miss)) - 1, -arc + tau / 4, arc + tau / 4, 0)
+                ctx.stroke()
+            ctx.rotate(tau / 5)
         ctx.restore()
         
         ctx.gray(0.8)
@@ -291,11 +341,8 @@ class SongView(BaseView):
         super().think(ins, delta_ms)
         utils.blm_timeout(self, delta_ms)
 
-        if self.first_think:
-            self.first_think = False
-            return
-
-        media.think(delta_ms)
+        if not self.first_think:
+            media.think(delta_ms)
 
         if self.input.buttons.os.middle.pressed and not self.is_active():
             while not self.vm.is_active(self.app):
@@ -314,7 +361,7 @@ class SongView(BaseView):
         if self.streak > self.longeststreak:
             self.longeststreak = self.streak
 
-        if not self.paused:
+        if not self.paused and not self.first_think:
             self.time += delta_ms
 
         if self.song and self.time >= -AUDIO_DELAY - self.song.delay and not self.started:
@@ -342,30 +389,61 @@ class SongView(BaseView):
             if self.demo_mode:
                 media.set_volume(1.0)
 
+        if len(self.data.tempoMarkers) > self.tempo_mark + 1:
+            time, bpm = self.data.tempoMarkers[self.tempo_mark]
+            new_time, new_bpm = self.data.tempoMarkers[self.tempo_mark + 1]
+            while self.time + VIDEO_DELAY >= new_time:
+                self.beat_point += (new_time - time) / (60000.0 / bpm)
+                self.bpm = new_bpm
+                self.period = 60000.0 / self.bpm
+                self.tempo_mark += 1
+                time, bpm = self.data.tempoMarkers[self.tempo_mark]
+                if self.tempo_mark + 1 == len(self.data.tempoMarkers):
+                    break
+                new_time, new_bpm = self.data.tempoMarkers[self.tempo_mark + 1]
+
+        self.beat = self.beat_point + (self.time + VIDEO_DELAY - self.data.tempoMarkers[self.tempo_mark][0]) / self.period
+        #print(self.time, self.beat, self.beat_point, self.tempo_mark, self.data.tempoMarkers[self.tempo_mark], self.data.tempoMarkers[self.tempo_mark + 1])
+
+        self.beats.clear()
+        if self.time + VIDEO_DELAY < 0:
+            for i in range(-4, 0):
+                a = self.mid_period * i
+                if a > self.time:
+                    self.beats.append((a, i))
+            self.beats.append((0, 0))
+        t = max(0, self.time + VIDEO_DELAY)
+        while t < self.time + VIDEO_DELAY + self.mid_period * 4:
+            t, no = self._next_beat_at(t)
+            if t < self.time + VIDEO_DELAY + self.mid_period * 4:
+                self.beats.append((t, no))
+        #print(self.time + VIDEO_DELAY, self.beat, self.period, beats)
+
         if self.paused:
             return
         
         delta_time = self.time - self.last_time
         delta_ms = min(delta_ms, 100)
 
-        self.good = max(0, self.good - delta_ms / self.data.period)
+        self.good = max(0, self.good - delta_ms / self.period)
         self.bad = max(0, self.bad - delta_ms / 500)
-        self.miss = max(0, self.miss - delta_ms / self.data.period)
+        self.miss = max(0, self.miss - delta_ms / self.period)
         for i in range(5):
             self.missed[i] = max(0, self.missed[i] - delta_ms / 1500)
+            self.bads[i] = max(0, self.bads[i] - delta_ms / 750)
             self.petal_events[i].clear()
 
-        earlyMargin       = 60000.0 / self.data.bpm / 3.5
-        lateMargin        = 60000.0 / self.data.bpm / 3.5
+        earlyMargin       = 60000.0 / self.bpm / 3.5
+        lateMargin        = 60000.0 / self.bpm / 3.5 + INPUT_DELAY
 
         self.notes.clear()
         self.events_in_margin.clear()
 
         if self.app and not self.finished:
-            self.data.track.getEvents(self.time - self.data.period / 2, self.time + self.data.period * 4, self.events)
+            self.data.track.getEvents(self.time - self.mid_period / 2, self.time + self.mid_period * 4.5, self.events)
         else:
             self.events.clear()
-        
+
         for event in self.events:
             if event.time <= self.time <= event.time + event.length:
                 self.notes.add(event.number)
@@ -409,15 +487,14 @@ class SongView(BaseView):
 
             # we can't rely on release events being delivered if delta_time gets high
             # TODO: revisit once the new input API is there
-            DELTA_THRESHOLD = 75
             if self.input.captouch.petals[p*2].whole.pressed or (delta_time >= DELTA_THRESHOLD and pressed):
                 #if delta_time >= DELTA_THRESHOLD: print("delta", delta_time)
                 if not events:
-                    # TODO: only ignore if petal was pressed in previous tick
-                    if delta_time < DELTA_THRESHOLD:
+                    if delta_time < DELTA_THRESHOLD and not self.last_state[petal]:
                         #print("fiba", petal, self.time, delta_time)
                         utils.play_fiba(self.app)
                         self.bad = 1.0
+                        self.bads[petal] = 1.0
                         self.streak = 0
                 else:
                     event = min(events, key=lambda x: x.time)
@@ -441,6 +518,7 @@ class SongView(BaseView):
             if bad_chord:
                 utils.play_fiba(self.app)
                 self.bad = 1.0
+                self.bads[event.number] = 1.0
                 self.streak = 0
             else:
                 event.played = True
@@ -449,7 +527,7 @@ class SongView(BaseView):
                     self.streak += 1
                     self.laststreak = event.time
                     if self.debug:
-                        print(self.time - event.time)
+                        print(self.time - event.time, delta_time)
 
                 self.led_override[event.number] = 50
                 self.petals[event.number] = event
@@ -469,11 +547,14 @@ class SongView(BaseView):
             if d:
                 utils.petal_leds(petal, d)
 
+            self.last_state[petal] = pressed
+
         leds.update()
         #gc.collect()
         #print("think", gc.mem_alloc() - mem)
         
         self.last_time = self.time
+        self.first_think = False
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)

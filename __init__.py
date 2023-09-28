@@ -14,9 +14,11 @@ try:
 except ImportError:
     UNSUPPORTED = True
 
+DEFAULT_PATH = '/flash/apps/PetalHero'
+
 # TODO: FIXME
 import sys
-sys.path.append('/flash/apps/PetalHero')
+sys.path.append(DEFAULT_PATH)
 
 import flower
 import utils
@@ -209,4 +211,4 @@ if __name__ == '__main__':
     for i in range(1,32):
         bl00mbox.Channel(i).clear()
         bl00mbox.Channel(i).free = True
-    st3m.run.run_app(PetalHero, '/flash/apps/PetalHero')
+    st3m.run.run_app(PetalHero, DEFAULT_PATH)

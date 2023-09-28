@@ -41,7 +41,8 @@ class LoadingView(BaseView):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         utils.blm_timeout(self, delta_ms)
-        if self.vm.transitioning or not self.is_active(): return
+        
+    def on_enter_done(self):
         #gc.collect()
         t = time.ticks_ms()
         view = song.SongView(self.app, self.song, self.difficulty)

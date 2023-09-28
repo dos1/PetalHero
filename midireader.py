@@ -170,7 +170,9 @@ class MidiReader(midi.MidiOutStream):
     self.nTracks = nTracks
     
   def tempo(self, value):
-    #if self.ignored: return
+    # TODO: should tempoMarkers list get sorted in case of tempo events scattered
+    # across various tracks?
+
     bpm = 60.0 * 10.0**6 / value
     if not self.tempoMarkers or bpm != self.tempoMarkers[-1][1]:
         self.tempoMarkers.append((midi.MidiOutStream.abs_time(self), bpm))

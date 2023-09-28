@@ -29,12 +29,12 @@ class LazySong(songinfo.SongInfo):
         return self
 
 
-def discover_songs(path: str, songs, to_process):
+def discover_songs_at(path: str, songs: list, to_process: set, dirs: set):
     path = path.rstrip("/")
     try:
         l = os.listdir(path)
     except Exception as e:
-        print(f"Could not discover songs in {path}: {e}")
+        #print(f"Could not discover songs in {path}: {e}")
         l = []
 
     for d in l:
@@ -47,8 +47,10 @@ def discover_songs(path: str, songs, to_process):
         try:
             st = os.stat(inipath)
             if not stat.S_ISREG(st[0]):
+                dirs.add(dirpath)
                 continue
         except Exception:
+            dirs.add(dirpath)
             continue
 
         s = LazySong(dirpath)
@@ -59,12 +61,12 @@ def discover_songs(path: str, songs, to_process):
         try:
             st = os.stat(inipath)
             if not stat.S_ISREG(st[0]):
-                to_process.append(s)
+                to_process.add(s)
         except Exception:
-            to_process.append(s)
+            to_process.add(s)
             
         yield s
-
+        
 class SelectView(BaseView):
     def __init__(self, app):
         super().__init__()
@@ -72,14 +74,19 @@ class SelectView(BaseView):
         self.flower = flower.Flower(0.001)
         self._sc = ScrollController()
         self.songs = []
-        self.to_process = []
-        self.discovery_iter = discover_songs("/sd/PetalHero", self.songs, self.to_process)
+        self.to_process = set()
+        self.discovery_iter = self._discover_songs()
         self.processing_now = None
         self.loading = True
         self._scroll_pos = 0
         self.pos = -1
         self.repeat_count = 0
         self.first_scroll_think = False
+        
+    def _discover_songs(self):
+        dirs = {"/sd/PetalHero", "/flash/PetalHero", self.app.path + "/songs"}
+        while dirs:
+            yield from discover_songs_at(dirs.pop(), self.songs, self.to_process, dirs)
         
     def discover(self, timeout = 100, play = True):
         if not self.loading:
@@ -243,11 +250,11 @@ class SelectView(BaseView):
 
         if self.input.buttons.app.left.pressed or (self.input.buttons.app.left.repeated and not self._sc.at_left_limit()):
             utils.play_crunch(self.app)
-            for i in range(10 if self.repeat_count >= 10 else 1):
+            for i in range(5 if self.repeat_count >= 10 else 1):
                 self._sc.scroll_left()
             self._scroll_pos = 0.0
         elif self.input.buttons.app.right.pressed or (self.input.buttons.app.right.repeated and not self._sc.at_right_limit()):
-            for i in range(10 if self.repeat_count >= 10 else 1):
+            for i in range(5 if self.repeat_count >= 10 else 1):
                 self._sc.scroll_right()
             self._scroll_pos = 0.0
             utils.play_crunch(self.app)
