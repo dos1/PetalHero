@@ -99,7 +99,7 @@ class SelectView(BaseView):
             self.total_process = len(self.to_process)
             self._sc.set_item_count(len(self.songs))
             self.loading = False
-            self.songs.sort(key=lambda x: x.name)
+            self.songs.sort(key=lambda x: x.name.lower())
             if not self.to_process and play:
                 self.play()
 
@@ -228,6 +228,19 @@ class SelectView(BaseView):
         ctx.font_size = 15
         ctx.gray(0.75)
         ctx.text("/sd/PetalHero")
+        
+        if self.songs:
+            if abs(self._sc.target_position() - self._sc.current_position()) > 4:
+                ctx.gray(0.2)
+                ctx.round_rectangle(-105, -25, 50, 50, 10)
+                ctx.fill()
+                ctx.font = "Camp Font 3"
+                ctx.text_align = ctx.CENTER
+                ctx.text_baseline = ctx.MIDDLE
+                ctx.font_size = 35
+                ctx.move_to(-80, 2)
+                ctx.gray(1.0)
+                ctx.text(str(self.songs[self._sc.target_position()].name.upper()[0]))
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
@@ -250,14 +263,18 @@ class SelectView(BaseView):
 
         if self.input.buttons.app.left.pressed or (self.input.buttons.app.left.repeated and not self._sc.at_left_limit()):
             utils.play_crunch(self.app)
-            for i in range(5 if self.repeat_count >= 10 else 1):
+            if self.input.buttons.app.left.pressed:
                 self._sc.scroll_left()
+            else:
+                self._sc.scroll_to(self._sc.target_position() - (5 if self.repeat_count > 5 else 1))
             self._scroll_pos = 0.0
         elif self.input.buttons.app.right.pressed or (self.input.buttons.app.right.repeated and not self._sc.at_right_limit()):
-            for i in range(5 if self.repeat_count >= 10 else 1):
-                self._sc.scroll_right()
-            self._scroll_pos = 0.0
             utils.play_crunch(self.app)
+            if self.input.buttons.app.right.pressed:
+                self._sc.scroll_right()
+            else:
+                self._sc.scroll_to(self._sc.target_position() + (5 if self.repeat_count > 5 else 1))
+            self._scroll_pos = 0.0
             
         if self.input.buttons.app.left.repeated or self.input.buttons.app.right.repeated:
             self.repeat_count += 1
