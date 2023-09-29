@@ -187,7 +187,11 @@ class PetalHero(Application):
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
         leds.set_slew_rate(255)
+        leds.set_all_rgb(0, 0, 0)
         leds.set_auto_update(0)
+
+    def on_enter_done(self):
+        leds.set_slew_rate(42)
 
     def on_exit(self):
         super().on_exit()
