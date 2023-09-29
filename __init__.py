@@ -126,9 +126,6 @@ class PetalHero(Application):
         ctx.gray(1.0)
         ctx.move_to(0, 70 + math.sin(self.time * 4) * 4)
         ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
-        
-        if self.is_active():
-            self.select.discover(50, False)
 
     def unload(self):
         if not self.loaded:
@@ -174,6 +171,9 @@ class PetalHero(Application):
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
+            
+        if self.is_active():
+            self.select.discover(40, False)
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)

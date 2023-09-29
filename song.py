@@ -26,7 +26,7 @@ import score
 import gc
 
 AUDIO_DELAY = const(150) # approximate audio startup delay, ms
-VIDEO_DELAY = const(40) # delay between audio and what's displayed on the screen
+VIDEO_DELAY = const(60) # delay between audio and what's displayed on the screen
 INPUT_DELAY = const(30) # additional headroom for input handling
 DELTA_THRESHOLD = const(60) # above this we assume that there may be missed release events
 RADIUS = const(22)
@@ -568,7 +568,7 @@ class SongView(BaseView):
         leds.set_slew_rate(238)
             
     def on_enter_done(self):
-        #sys_display.set_mode(sys_display.get_mode() | 512)
+        #sys_display.set_mode(sys_display.get_mode() | sys_display.low_latency)
         for i in range(5):
             utils.petal_leds(i, 0.069)
         leds.update()
@@ -576,7 +576,7 @@ class SongView(BaseView):
 
     def on_exit(self):
         super().on_exit()
-        #sys_display.set_mode(sys_display.get_mode() & ~512)
+        #sys_display.set_mode(sys_display.get_mode() & ~sys_display.low_latency)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
         #gc.enable()
