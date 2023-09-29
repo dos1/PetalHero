@@ -25,7 +25,7 @@ import flower
 import score
 import gc
 
-AUDIO_DELAY = const(150) # approximate audio startup delay, ms
+AUDIO_STARTUP = const(750) # how early should audio be loaded
 VIDEO_DELAY = const(60) # delay between audio and what's displayed on the screen
 INPUT_DELAY = const(30) # additional headroom for input handling
 DELTA_THRESHOLD = const(60) # above this we assume that there may be missed release events
@@ -50,7 +50,8 @@ class SongView(BaseView):
             self.data.period = 60000.0 / self.data.bpm
             self.data.tempoMarkers = [(0, self.data.bpm)]
         self.started = False
-        self.time = -max(1800, self.data.period * 4)
+        self.loaded = False
+        self.time = -max(1800 + AUDIO_STARTUP, self.data.period * 4)
         if self.song:
             self.time -= self.song.delay
         self.flower = flower.Flower(0)
@@ -364,9 +365,13 @@ class SongView(BaseView):
         if not self.paused and not self.first_think:
             self.time += delta_ms
 
-        if self.song and self.time >= -AUDIO_DELAY - self.song.delay and not self.started:
+        if self.song and self.time >= -AUDIO_STARTUP - self.song.delay and not self.loaded:
+            self.loaded = True
+            media.load(self.song.dirName + '/song.mp3', True)
+            
+        if self.song and self.song.loaded and self.time >= -self.song.delay and not self.started:
             self.started = True
-            media.load(self.song.dirName + '/song.mp3')
+            media.play()
 
         if self.song and self.started:
             t = media.get_time()
