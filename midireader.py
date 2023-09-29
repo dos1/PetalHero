@@ -119,11 +119,13 @@ class MidiReader(midi.MidiOutStream):
     self.velocity  = {}
     self.ticksPerBeat = 480
     self.tempoMarkers = []
+    self.beats = []
     #self.tracks        = [Track() for t in range(len(difficulties))]
     self.difficulty = difficulty
     self.track = Track()
     self.nTracks = -1
     self.ignored = False
+    self.track_name = None
     
     self.current_tempo_marker = 0
     self.scaledTime = 0
@@ -186,12 +188,18 @@ class MidiReader(midi.MidiOutStream):
   def sequence_name(self, val):
     name = ''.join(list(map(chr, val)))
     #print(name)
-    self.ignored = name != "PART GUITAR" and self.nTracks > 2
+    self.track_name = name
+    self.ignored = name != "PART GUITAR" and name != "BEAT" and self.nTracks > 2
+    self.current_tempo_marker = 0
+    self.scaledTime = 0
     return self.ignored
 
   def note_on(self, channel, note, velocity):
     if self.ignored: return
     #print("note_on", channel, note, velocity, self.abs_time())
+    if self.track_name == "BEAT":
+      self.beats.append(self.abs_time())
+      return
     if not note in noteMap:
       return
     self.velocity[note] = velocity

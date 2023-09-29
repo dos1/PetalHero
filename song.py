@@ -92,11 +92,26 @@ class SongView(BaseView):
         self.beat = 0
         self.beats = []
         
-        self.mid_bpm = (max(self.data.tempoMarkers, key=lambda x: x[1])[1] + min(self.data.tempoMarkers, key=lambda x: x[1])[1]) / 2
-        self.mid_period = 60000.0 / self.mid_bpm
+        if self.data.beats:
+            self.mid_period = sum(map(lambda x: x[1]-x[0], zip(self.data.beats ,self.data.beats[1:]))) / (len(self.data.beats) - 1)
+            self.mid_bpm = 60000.0 / self.mid_period
+        else:
+            self.mid_bpm = (max(self.data.tempoMarkers, key=lambda x: x[1])[1] + min(self.data.tempoMarkers, key=lambda x: x[1])[1]) / 2
+            self.mid_period = 60000.0 / self.mid_bpm
+
+        self.current_beat = 0
 
     def _next_beat_at(self, time):
         # assumes that given time isn't earlier than self.time
+        if self.data.beats and self.current_beat < len(self.data.beats):
+            beat = self.current_beat
+            while time + VIDEO_DELAY >= self.data.beats[beat]:
+                if len(self.data.beats) == beat + 1:
+                    break
+                beat += 1
+            if time < self.data.beats[beat]:
+                return (self.data.beats[beat], beat)
+        
         beat_point = self.beat_point
         period = self.period
         tempo_mark = self.tempo_mark
@@ -407,8 +422,17 @@ class SongView(BaseView):
                     break
                 new_time, new_bpm = self.data.tempoMarkers[self.tempo_mark + 1]
 
-        self.beat = self.beat_point + (self.time + VIDEO_DELAY - self.data.tempoMarkers[self.tempo_mark][0]) / self.period
-        #print(self.time, self.beat, self.beat_point, self.tempo_mark, self.data.tempoMarkers[self.tempo_mark], self.data.tempoMarkers[self.tempo_mark + 1])
+        if self.data.beats and len(self.data.beats) > self.current_beat + 1:
+            while self.time + VIDEO_DELAY >= self.data.beats[self.current_beat + 1]:
+                if self.current_beat == len(self.data.beats) - 2:
+                    break
+                self.current_beat += 1
+
+            self.beat = self.current_beat + (self.time + VIDEO_DELAY - self.data.beats[self.current_beat]) / (self.data.beats[self.current_beat + 1] - self.data.beats[self.current_beat])
+            #print(self.time + VIDEO_DELAY, self.beat, self.current_beat, self.data.beats[self.current_beat], self.data.beats[self.current_beat + 1])
+        else:
+            self.beat = self.beat_point + (self.time + VIDEO_DELAY - self.data.tempoMarkers[self.tempo_mark][0]) / self.period
+            #print(self.time, self.beat, self.beat_point, self.tempo_mark, self.data.tempoMarkers[self.tempo_mark], self.data.tempoMarkers[self.tempo_mark + 1])
 
         self.beats.clear()
         if self.time + VIDEO_DELAY < 0:

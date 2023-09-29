@@ -194,7 +194,7 @@ class EventDispatcher:
             stream.tempo((b1<<16) + (b2<<8) + b3)
         
         # SEQUENCE_NUMBER = 0x00 (00 02 ss ss (seq-number))
-        if meta_type == SEQUENCE_NUMBER:
+        elif meta_type == SEQUENCE_NUMBER:
             number = readBew(data)
             stream.sequence_number(number)
         
@@ -247,13 +247,6 @@ class EventDispatcher:
         # END_OFF_TRACK = 0x2F (2F 00)
         elif meta_type == END_OF_TRACK:
             stream.end_of_track()
-        
-        # TEMPO = 0x51 (51 03 tt tt tt (tempo in us/quarternote))
-        elif meta_type == TEMPO:
-            b1, b2, b3 = data
-            # uses 3 bytes to represent time between quarter 
-            # notes in microseconds
-            stream.tempo((b1<<16) + (b2<<8) + b3)
         
         # SMTP_OFFSET = 0x54 (54 05 hh mm ss ff xx)
         elif meta_type == SMTP_OFFSET:
