@@ -285,10 +285,10 @@ class SongView(BaseView):
         ctx.save()
         ctx.rotate(tau / 10 + tau / 5)
         for petal in range(5):
-            ctx.rgba(1.0, 0.0, 0.0, self.bads[petal] * 0.75)
             ctx.line_width = 2
             arc = tau/10
             if self.bads[petal]:
+                ctx.rgba(*utils.dim(utils.PETAL_COLORS[petal], 0.9), self.bads[petal])
                 ctx.arc(0, 0, 10 * (1.0 + 0.05 * (self.good - self.miss)) - 1, -arc + tau / 4, arc + tau / 4, 0)
                 ctx.stroke()
             ctx.rotate(tau / 5)
