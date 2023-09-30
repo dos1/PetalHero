@@ -134,6 +134,7 @@ class ScoreView(BaseView):
         super().on_exit()
         if self.app:
             utils.play_go(self.app)
+        return True
 
 if __name__ == '__main__':
     view = ScoreView(None, None, 420, difficulties[2])

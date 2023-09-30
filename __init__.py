@@ -203,6 +203,7 @@ class PetalHero(Application):
         leds.update()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
+        return True
             
     def on_exit_done(self):
         if UNSUPPORTED:

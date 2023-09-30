@@ -138,3 +138,4 @@ class DifficultyView(BaseView):
         super().on_exit()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
+        return True
