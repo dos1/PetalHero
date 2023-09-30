@@ -172,8 +172,8 @@ class PetalHero(Application):
             utils.play_go(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
             
-        if self.is_active():
-            self.select.discover(40, False)
+        if self.is_active() and not self.vm.transitioning:
+            self.select.discover(20, False)
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
