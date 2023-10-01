@@ -20,16 +20,20 @@ DEFAULT_PATH = '/flash/apps/PetalHero'
 import sys
 sys.path.append(DEFAULT_PATH)
 
-import flower
-import utils
-import select
-import readme
+if not UNSUPPORTED:
+    import flower
+    import utils
+    import select
+    import readme
 
 class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
         super().__init__(app_ctx)
         self.app = self
         self.path = app_ctx.bundle_path
+        
+        if UNSUPPORTED:
+            return
 
         self.flower = flower.Flower(0.00125)
         self.loaded = False

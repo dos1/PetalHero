@@ -26,8 +26,8 @@ import score
 import gc
 
 AUDIO_STARTUP = const(750) # how early should audio be loaded
-VIDEO_DELAY = const(60) # delay between audio and what's displayed on the screen
-INPUT_DELAY = const(30) # additional headroom for input handling
+VIDEO_DELAY = const(80) # delay between audio and what's displayed on the screen
+INPUT_DELAY = const(20) # additional headroom for input handling
 DELTA_THRESHOLD = const(60) # above this we assume that there may be missed release events
 RADIUS = const(22)
 tau = const(6.283185307179586)
@@ -102,14 +102,18 @@ class SongView(BaseView):
         self.current_beat = 0
 
     def _next_beat_at(self, time):
-        # assumes that given time isn't earlier than self.time
-        if self.data.beats and self.current_beat < len(self.data.beats):
+        # won't return anything earlier than current beat
+
+        if time < self.time + VIDEO_DELAY - 1:
+            diff = self.time + VIDEO_DELAY - time
+            if diff > (self.beat - int(self.beat)) * self.period + 1:
+                return (self.time + VIDEO_DELAY - self.period * (self.beat - int(self.beat)), int(self.beat))
+        
+        if self.data.beats:
             beat = self.current_beat
-            while time + VIDEO_DELAY >= self.data.beats[beat]:
-                if len(self.data.beats) == beat + 1:
-                    break
+            while len(self.data.beats) > beat and time + VIDEO_DELAY >= self.data.beats[beat]:
                 beat += 1
-            if time < self.data.beats[beat]:
+            if len(self.data.beats) > beat and time < self.data.beats[beat]:
                 return (self.data.beats[beat], beat)
         
         beat_point = self.beat_point
@@ -136,20 +140,21 @@ class SongView(BaseView):
     def draw(self, ctx: Context) -> None:
         #mem = gc.mem_alloc()
         #self.redraw = True        
-        start = self.time + self.mid_period * 4
+        start = self.time - INPUT_DELAY + self.mid_period * 4
         start_marg = start + self.mid_period * 0.25
-        stop = self.time
+        stop = self.time - INPUT_DELAY
 
         beat_no = self.beats[-1][1]
         #if beat_no <= 0:
         #    beat_no -= 2
-        other = int((abs(beat_no) / 2) % 2)
+        other = int((beat_no / 2) % 2)
         utils.clear(ctx, (0.1 if other else 0.0) + self.miss * 0.15)
                 
         ctx.gray(0.25)
         
         for i in range(len(self.beats)):
             t, no = self.beats[len(self.beats) - i - 1]
+            t -= VIDEO_DELAY - INPUT_DELAY
             #if no <= 0:
             #    no -= 2
             if int(no) % 2:
@@ -157,7 +162,7 @@ class SongView(BaseView):
             #ctx.gray(0.4 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12)
             #ctx.line_width = 1.75 + i * 0.12 + (1-(self.time/2 / self.data.period) % 1) * 0.12
             ctx.gray((0.1 * ((int((abs(no) + 1) / 2) % 2) == 0)) + self.miss * 0.15)
-            pos = (120-RADIUS) * (((t - VIDEO_DELAY) - stop) / (start - stop))
+            pos = (120-RADIUS) * ((t - stop) / (start - stop))
             if pos > 0:
                 #ctx.begin_path()
                 if self.debug and False:
@@ -211,14 +216,14 @@ class SongView(BaseView):
                         break
 
                 ctx.begin_path()
-                time = event.time - VIDEO_DELAY
+                time = event.time - VIDEO_DELAY + INPUT_DELAY
 
                 length = event.length
                 during = False
                 arc = tau/20
-                if event.played or (self.demo_mode and event.time <= self.time + VIDEO_DELAY <= event.time + event.length):
-                    length -= self.time - event.time + VIDEO_DELAY
-                    time = self.time
+                if event.played or (self.demo_mode and event.time <= self.time + VIDEO_DELAY - INPUT_DELAY <= event.time + event.length):
+                    length -= self.time - event.time + VIDEO_DELAY - INPUT_DELAY
+                    time = self.time - INPUT_DELAY
                     if length < 0:
                         length = 0
                     if not event.missed or self.demo_mode:
@@ -409,11 +414,19 @@ class SongView(BaseView):
             if self.demo_mode:
                 media.set_volume(1.0)
 
+        if self.data.beats and len(self.data.beats) > self.current_beat + 1:
+            while self.time + VIDEO_DELAY >= self.data.beats[self.current_beat + 1]:
+                if self.current_beat == len(self.data.beats) - 2:
+                    break
+                self.current_beat += 1
+
         if len(self.data.tempoMarkers) > self.tempo_mark + 1:
             time, bpm = self.data.tempoMarkers[self.tempo_mark]
             new_time, new_bpm = self.data.tempoMarkers[self.tempo_mark + 1]
             while self.time + VIDEO_DELAY >= new_time:
                 self.beat_point += (new_time - time) / (60000.0 / bpm)
+                if self.data.beats and len(self.data.beats) > self.current_beat + 1:
+                    self.beat_point = self.current_beat + (new_time - self.data.beats[self.current_beat]) / (self.data.beats[self.current_beat + 1] - self.data.beats[self.current_beat])
                 self.bpm = new_bpm
                 self.period = 60000.0 / self.bpm
                 self.tempo_mark += 1
@@ -423,30 +436,36 @@ class SongView(BaseView):
                 new_time, new_bpm = self.data.tempoMarkers[self.tempo_mark + 1]
 
         if self.data.beats and len(self.data.beats) > self.current_beat + 1:
-            while self.time + VIDEO_DELAY >= self.data.beats[self.current_beat + 1]:
-                if self.current_beat == len(self.data.beats) - 2:
-                    break
-                self.current_beat += 1
-
+            self.period = self.data.beats[self.current_beat + 1] - self.data.beats[self.current_beat]
+            self.bpm = 60000.0 / self.period
             self.beat = self.current_beat + (self.time + VIDEO_DELAY - self.data.beats[self.current_beat]) / (self.data.beats[self.current_beat + 1] - self.data.beats[self.current_beat])
-            #print(self.time + VIDEO_DELAY, self.beat, self.current_beat, self.data.beats[self.current_beat], self.data.beats[self.current_beat + 1])
+            #if self.debug and not self.paused:
+            #    print(self.time + VIDEO_DELAY, self.beat, self.current_beat, self.data.beats[self.current_beat], self.data.beats[self.current_beat + 1], len(self.data.beats))
         else:
             self.beat = self.beat_point + (self.time + VIDEO_DELAY - self.data.tempoMarkers[self.tempo_mark][0]) / self.period
-            #print(self.time, self.beat, self.beat_point, self.tempo_mark, self.data.tempoMarkers[self.tempo_mark], self.data.tempoMarkers[self.tempo_mark + 1])
+            #if self.debug and not self.paused and len(self.data.tempoMarkers) > 1:
+            #    print(self.time + VIDEO_DELAY, self.beat, self.beat_point, self.tempo_mark, self.data.tempoMarkers[self.tempo_mark], self.data.tempoMarkers[self.tempo_mark + 1])
 
         self.beats.clear()
-        if self.time + VIDEO_DELAY < 0:
-            for i in range(-4, 0):
-                a = self.mid_period * i
-                if a > self.time:
+        start = self.time + VIDEO_DELAY - INPUT_DELAY
+        stop = self.time + VIDEO_DELAY - INPUT_DELAY + self.mid_period * 4
+        if start < 0:
+            for i in range(-12, 0):
+                if len(self.data.beats) > 1:
+                    a = (self.data.beats[1] - self.data.beats[0]) * i
+                else:
+                    a = self.data.period * i
+                if a > start and a < stop:
                     self.beats.append((a, i))
-            self.beats.append((0, 0))
-        t = max(0, self.time + VIDEO_DELAY)
-        while t < self.time + VIDEO_DELAY + self.mid_period * 4:
+            if 0 < stop:
+                self.beats.append((0, 0))
+        t = max(0, start)
+        t, no = self._next_beat_at(t)
+        while t < stop:
+            self.beats.append((t, no))
             t, no = self._next_beat_at(t)
-            if t < self.time + VIDEO_DELAY + self.mid_period * 4:
-                self.beats.append((t, no))
-        #print(self.time + VIDEO_DELAY, self.beat, self.period, beats)
+        #if self.debug and not self.paused:
+        #    print(self.time + VIDEO_DELAY - INPUT_DELAY, self.beat, self.bpm, self.period, self.beats)
 
         if self.paused:
             return
@@ -462,8 +481,8 @@ class SongView(BaseView):
             self.bads[i] = max(0, self.bads[i] - delta_ms / 750)
             self.petal_events[i].clear()
 
-        earlyMargin       = 60000.0 / self.bpm / 3.5
-        lateMargin        = 60000.0 / self.bpm / 3.5 + INPUT_DELAY
+        earlyMargin       = 60000.0 / max(100, min(self.bpm, 200)) / 3.5 * 0.5
+        lateMargin        = 60000.0 / max(100, min(self.bpm, 200)) / 3.5 + INPUT_DELAY
 
         self.notes.clear()
         self.events_in_margin.clear()
@@ -588,8 +607,6 @@ class SongView(BaseView):
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
         self.first_think = True
-        if self.vm.direction == ViewTransitionDirection.FORWARD: # self-pushed
-            return
         media.set_volume(1.0)
         if self.app:
             media.load(self.app.path + '/sounds/start.mp3')
@@ -614,8 +631,8 @@ class SongView(BaseView):
             utils.volume(self.app, 14000)
             utils.play_back(self.app)
             
-        if self.song and not self.started:
-            media.load(self.song.dirName + '/song.mp3')
+        #if self.song and not self.started:
+        #    media.load(self.song.dirName + '/song.mp3')
 
 if __name__ == '__main__':
     media.stop()
