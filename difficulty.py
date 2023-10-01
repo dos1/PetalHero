@@ -91,7 +91,7 @@ class DifficultyView(BaseView):
         ctx.font_size = 25
         ctx.text_align = ctx.CENTER
         ctx.text_baseline = ctx.MIDDLE
-        ctx.move_to (0, -80)
+        ctx.move_to (0, -78)
         ctx.text("DIFFICULTY")
         
         """

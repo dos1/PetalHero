@@ -290,10 +290,10 @@ class SongView(BaseView):
             buf = sys_scope.get_buffer_x()
             ctx.move_to(-120, 0)
             for i in range(0, len(buf), 32):
-                val = buf[i] / 32
+                val = max(-200, min(200, buf[i] / 12))
                 ctx.line_to(-120 + i, max(6, val))
             for i in range(len(buf) - 1, 0, -32):
-                val = buf[i] / 32
+                val = max(-200, min(200, buf[i] / 12))
                 ctx.line_to(-120 + i, min(-6, val))
             ctx.fill()
         else:
@@ -393,7 +393,7 @@ class SongView(BaseView):
             self.started = True
             media.play()
 
-        if self.song and self.started:
+        if self.song and self.started and not self.paused:
             t = media.get_time()
             if t > 0:
                 self.time = media.get_time() * 1000 - self.song.delay
