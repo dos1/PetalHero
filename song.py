@@ -6,6 +6,7 @@ import math
 import leds
 import sys_display
 import sys_scope
+import gc
 from micropython import const
 from time import ticks_ms, sleep
 try:
@@ -18,12 +19,11 @@ if __name__ == '__main__':
     import sys
     sys.path.append('/flash/apps/PetalHero')
 
-import midi
-import midireader
-import utils
-import flower
-import score
-import gc
+from . import midi
+from . import midireader
+from . import utils
+from . import flower
+from . import score
 
 AUDIO_STARTUP = const(750) # how early should audio be loaded
 VIDEO_DELAY = const(80) # delay between audio and what's displayed on the screen

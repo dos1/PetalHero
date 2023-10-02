@@ -2,8 +2,8 @@ from st3m.ui.view import BaseView, ViewTransitionBlend
 import gc
 import time
 
-import song
-import utils
+from . import song
+from . import utils
 
 class LoadingView(BaseView):
     def __init__(self, app, song, difficulty):

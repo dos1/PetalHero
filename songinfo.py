@@ -1,11 +1,11 @@
-from configparser import ConfigParser
 import os
-import midi
-import midireader
 
-from midireader import difficulties, noteSet, noteMap
+from .configparser import ConfigParser
 
-class MidiInfoReader(midi.MidiOutStream):
+from .midi import MidiOutStream, MidiInFile
+from .midireader import difficulties, noteSet, noteMap
+
+class MidiInfoReader(MidiOutStream):
   __slots__ = ("difficulties", "nTracks", "ignored", "trackNo")
       
   # We exit via this exception so that we don't need to read the whole file in
@@ -51,7 +51,7 @@ class SongInfo(object):
     try:
       self.info.read(infoFileName)
     except Exception as e:
-      print(e)
+      print(f"Exception while reading {infoFileName}: {e}")
 
   def _set(self, attr, value):
     if not self.info.has_section("song"):
@@ -93,7 +93,7 @@ class SongInfo(object):
     # See which difficulties are available
     noteFileName = os.path.join(os.path.dirname(self.fileName), "notes.mid")
     info = MidiInfoReader()
-    midiIn = midi.MidiInFile(info, noteFileName)
+    midiIn = MidiInFile(info, noteFileName)
     try:
       midiIn.read()
     except MidiInfoReader.Done:

@@ -9,10 +9,10 @@ try:
 except ImportError:
     pass
 
-import flower
-import difficulty
-import songinfo
-import utils
+from . import flower
+from . import difficulty
+from . import songinfo
+from . import utils
 
 class LazySong(songinfo.SongInfo):
     def __init__(self, dirpath):

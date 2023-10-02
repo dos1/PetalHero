@@ -12,9 +12,9 @@ if __name__ == '__main__':
     import sys
     sys.path.append('/flash/apps/PetalHero')
 
-import flower
-import utils
-from midireader import difficulties
+from . import flower
+from . import utils
+from .midireader import difficulties
 
 class ScoreView(BaseView):
     def __init__(self, app, data, streak, difficulty):

@@ -1,3 +1,12 @@
+import os, sys
+
+DEFAULT_PATH = '/flash/apps/PetalHero'
+
+if __name__ == '__main__':
+    __path__, __name__ = os.path.split(DEFAULT_PATH)
+    sys.path.append(__path__)
+    __path__ = None
+
 import math
 from st3m.ui.colours import *
 from st3m.ui.view import ViewTransitionSwipeLeft
@@ -7,6 +16,7 @@ import leds
 import bl00mbox
 from time import sleep
 import sys_display
+
 UNSUPPORTED = False
 try:
     import media
@@ -14,17 +24,11 @@ try:
 except ImportError:
     UNSUPPORTED = True
 
-DEFAULT_PATH = '/flash/apps/PetalHero'
-
-# TODO: FIXME
-import sys
-sys.path.append(DEFAULT_PATH)
-
 if not UNSUPPORTED:
-    import flower
-    import utils
-    import select
-    import readme
+    from . import flower
+    from . import utils
+    from . import select
+    from . import readme
 
 class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
@@ -116,9 +120,9 @@ class PetalHero(Application):
         ctx.font_size = 90
         ctx.text_align = ctx.CENTER
         ctx.text_baseline = ctx.MIDDLE
-        ctx.move_to (0, -30)
+        ctx.move_to (0, -28)
         ctx.text("PETAL")
-        ctx.move_to (0, 30)
+        ctx.move_to (0, 28)
         ctx.text("HERO")
 
         ctx.restore()
@@ -216,7 +220,7 @@ class PetalHero(Application):
             sleep(0.4)
             self.unload()
 
-if __name__ == '__main__':
+if not __path__:
     for i in range(1,32):
         bl00mbox.Channel(i).clear()
         bl00mbox.Channel(i).free = True

@@ -1,4 +1,4 @@
-import midi
+from . import midi
 
 AMAZING_DIFFICULTY      = 0
 MEDIUM_DIFFICULTY       = 1

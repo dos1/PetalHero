@@ -13,13 +13,15 @@ class ConfigParser:
         elif not fp and filename:
             fp = open(filename)
 
-        content = fp.read().split('\n')
+        content = fp.read().splitlines()
         
         for line in content:
             line = line.strip()
             if "=" in line:
-                key, value = line.split('=')
-                self.config_dict[key.lower().strip()] = value.strip()
+                key, value = line.split('=', 1)
+                key = key.lower().strip()
+                if key in ["name", "artist", "delay"]:
+                    self.config_dict[key] = value.strip()
             if "name" in self.config_dict and "artist" in self.config_dict and "delay" in self.config_dict:
                 break
 

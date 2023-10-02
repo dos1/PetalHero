@@ -7,9 +7,9 @@ try:
 except ImportError:
     pass
 
-import flower
-import loading
-import utils
+from . import flower
+from . import loading
+from . import utils
 
 class DifficultyView(BaseView):
     def __init__(self, app, song):
