@@ -1,3 +1,7 @@
+from .diacritics import diacritic_map
+
+KEYS = ["name", "artist", "delay", "preview_start_time", "song_length"]
+
 class ConfigParser:
     def __init__(self):
         self.config_dict = {}
@@ -20,9 +24,9 @@ class ConfigParser:
             if "=" in line:
                 key, value = line.split('=', 1)
                 key = key.lower().strip()
-                if key in ["name", "artist", "delay"]:
-                    self.config_dict[key] = value.strip()
-            if "name" in self.config_dict and "artist" in self.config_dict and "delay" in self.config_dict:
+                if key in KEYS:
+                    self.config_dict[key] = "".join(map(lambda x: diacritic_map[x] if x in diacritic_map else x, value.strip()))
+            if len(self.config_dict) == len(KEYS):
                 break
 
         fp.close()

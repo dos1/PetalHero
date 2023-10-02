@@ -311,7 +311,7 @@ class SelectView(BaseView):
         if pos != cur_target:
             song = self.songs[pos].load()
             media.load(song.dirName + "/song.mp3")
-            media.seek(0.1)
+            media.seek(song.preview)
             media.set_volume(0.0)
             self.first_scroll_think = True
 

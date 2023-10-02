@@ -134,8 +134,16 @@ class SongInfo(object):
     
   def setDelay(self, value):
     return self._set("delay", value)
+  
+  def getPreview(self):
+    preview = self._get("preview_start_time", int, None)
+    length = self._get("song_length", int, None)
+    if preview is None or preview < 0 or length is None or length <= 0:
+        return 0.1
+    return preview / length
     
   name          = property(getName, setName)
   artist        = property(getArtist, setArtist)
   delay         = property(getDelay, setDelay)
   difficulties  = property(getDifficulties)
+  preview       = property(getPreview)
