@@ -493,7 +493,7 @@ class SongView(BaseView):
             self.events.clear()
 
         for event in self.events:
-            if event.time <= self.time <= event.time + event.length:
+            if event.time <= self.time + delta_time and self.time <= event.time + max(event.length, 50):
                 self.notes.add(event.number)
             if self.time - lateMargin - delta_time <= event.time <= self.time + earlyMargin:
                 self.events_in_margin.add(event)
@@ -532,6 +532,9 @@ class SongView(BaseView):
             events = self.petal_events[petal]
 
             self.led_override[petal] = max(0, self.led_override[petal] - delta_ms)
+
+            if self.demo_mode:
+                continue
 
             # we can't rely on release events being delivered if delta_time gets high
             # TODO: revisit once the new input API is there
@@ -590,8 +593,11 @@ class SongView(BaseView):
             if not pressed:
                 self.petals[petal] = None
 
+            if petal in self.notes and self.demo_mode:
+                self.led_override[petal] = 1
+
             active = self.petals[petal] is not None
-            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else (1.0 if petal in self.notes and self.demo_mode else 0.069))
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else 0.069)
             if d:
                 utils.petal_leds(petal, d)
 
