@@ -144,7 +144,10 @@ class SongView(BaseView):
         start_marg = start + self.mid_period * 0.25
         stop = self.time - INPUT_DELAY
 
-        beat_no = self.beats[-1][1]
+        if self.beats:
+            beat_no = self.beats[-1][1]
+        else:
+            beat_no = 0
         #if beat_no <= 0:
         #    beat_no -= 2
         other = int((beat_no / 2) % 2)
@@ -637,8 +640,8 @@ class SongView(BaseView):
             utils.volume(self.app, 14000)
             utils.play_back(self.app)
             
-        #if self.song and not self.started:
-        #    media.load(self.song.dirName + '/song.mp3')
+        if self.song and not self.started and not self.vm.is_active(self.app):
+            media.load(self.song.dirName + '/song.mp3')
 
 if __name__ == '__main__':
     media.stop()
