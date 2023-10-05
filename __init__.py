@@ -172,7 +172,7 @@ class PetalHero(Application):
         leds.set_all_rgb(0, 0, 0)
 
         for i in range(5):
-            utils.petal_leds(i, -math.cos(self.time) / 2 + 0.5)
+            utils.petal_leds(i, pow(-math.cos(self.time) / 2 + 0.5, 1 / 2.2))
 
         leds.update()
 
@@ -196,7 +196,9 @@ class PetalHero(Application):
         self.time = -1
         leds.set_slew_rate(255)
         leds.set_all_rgb(0, 0, 0)
-        leds.set_auto_update(0)
+        leds.set_gamma(2.2, 2.2, 2.2)
+        leds.set_brightness(int(pow(leds.get_brightness() / 255, 1/2.2) * 255))
+        leds.set_auto_update(False)
 
     def on_enter_done(self):
         leds.set_slew_rate(42)

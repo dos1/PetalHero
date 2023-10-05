@@ -34,7 +34,7 @@ def fire_gradient(ctx):
     ctx.add_stop(0.5, [245, 111, 0], 0.75)
     ctx.add_stop(1.0, [151, 42, 0], 1.0)
 
-PETAL_COLORS = [GO_GREEN, RED, (1.0, 0.69, 0.0), BLUE, PUSH_RED]
+PETAL_COLORS = [GO_GREEN, RED, (1.0, 0.75, 0.0), BLUE, PUSH_RED]
 
 def petal_leds(petal, val, color = None):
     if not color:

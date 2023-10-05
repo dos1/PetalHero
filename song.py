@@ -493,7 +493,7 @@ class SongView(BaseView):
             self.events.clear()
 
         for event in self.events:
-            if event.time <= self.time + delta_time and self.time <= event.time + max(event.length, 50):
+            if event.time - delta_time <= self.time and self.time <= event.time + max(event.length, 50):
                 self.notes.add(event.number)
             if self.time - lateMargin - delta_time <= event.time <= self.time + earlyMargin:
                 self.events_in_margin.add(event)
@@ -594,10 +594,10 @@ class SongView(BaseView):
                 self.petals[petal] = None
 
             if petal in self.notes and self.demo_mode:
-                self.led_override[petal] = 1
+                self.led_override[petal] = 15
 
             active = self.petals[petal] is not None
-            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.15 if pressed else 0.069)
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.45 if pressed else 0.32)
             if d:
                 utils.petal_leds(petal, d)
 

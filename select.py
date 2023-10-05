@@ -91,11 +91,12 @@ class SelectView(BaseView):
         
     def discover(self, timeout = 100, play = True):
         if not self.loading:
-            return
+            return False
         try:
             start = time.ticks_ms()
             while time.ticks_ms() - start <= timeout:
                 next(self.discovery_iter)
+            return True
         except StopIteration:
             self.total_process = len(self.to_process)
             self._sc.set_item_count(len(self.songs))
@@ -103,6 +104,7 @@ class SelectView(BaseView):
             self.songs.sort(key=lambda x: x.name.lower())
             if not self.to_process and play:
                 self.play()
+            return False
 
     def draw(self, ctx: Context) -> None:
         
