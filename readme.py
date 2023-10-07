@@ -12,7 +12,7 @@ This should do:
 
   sox *.ogg -m -G -c 1 -C 128 -r 48k --norm=-3 song.mp3
 
-Some Guitar Hero rips may need to be resampled first:
+Some rips may need to be resampled first:
 
   for i in *.ogg; do sox $i -G -r 48k $i.flac; done
   sox *.flac -m -G -c 1 -C 128 -r 48k --norm=-3 song.mp3
@@ -43,7 +43,7 @@ def install():
             return
         l = []
 
-    if not "README" in l:
+    if not "README.TXT" in l:
         with open("/sd/PetalHero/README.TXT", "w") as file:
             file.write(README)
     #save_file_if_changed("/sd/PetalHero/README.TXT", README)
