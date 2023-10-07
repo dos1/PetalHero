@@ -293,10 +293,10 @@ class SongView(BaseView):
             buf = sys_scope.get_buffer_x()
             ctx.move_to(-120, 0)
             for i in range(0, len(buf), 32):
-                val = max(-200, min(200, buf[i] / 12))
+                val = max(-180, min(180, buf[i] / 16))
                 ctx.line_to(-120 + i, max(6, val))
             for i in range(len(buf) - 1, 0, -32):
-                val = max(-200, min(200, buf[i] / 12))
+                val = max(-180, min(180, buf[i] / 16))
                 ctx.line_to(-120 + i, min(-6, val))
             ctx.fill()
         else:

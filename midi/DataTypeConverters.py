@@ -1,6 +1,6 @@
 # -*- coding: ISO-8859-1 -*-
 
-from ustruct import pack, unpack, pack_into
+from struct import pack, unpack, pack_into
 
 """
 This module contains functions for reading and writing the special data types

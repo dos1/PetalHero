@@ -12,6 +12,7 @@ from st3m.ui.colours import *
 from st3m.ui.view import ViewTransitionSwipeLeft
 from st3m.application import Application, ApplicationContext
 import st3m.run
+import st3m.settings
 import leds
 import bl00mbox
 from time import sleep
@@ -197,8 +198,8 @@ class PetalHero(Application):
         leds.set_slew_rate(255)
         leds.set_all_rgb(0, 0, 0)
         leds.set_gamma(2.2, 2.2, 2.2)
-        leds.set_brightness(int(pow(leds.get_brightness() / 255, 1/2.2) * 255))
         leds.set_auto_update(False)
+        leds.set_brightness(int(pow(st3m.settings.num_leds_brightness.value / 255, 1/2.2) * 255))
 
     def on_enter_done(self):
         leds.set_slew_rate(42)

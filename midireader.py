@@ -202,6 +202,8 @@ class MidiReader(midi.MidiOutStream):
       return
     if not note in noteMap:
       return
+    if noteMap[note][0] != self.difficulty.id:
+      return
     self.velocity[note] = velocity
     self.heldNotes[(self.get_current_track(), channel, note)] = self.abs_time()
 
@@ -209,6 +211,8 @@ class MidiReader(midi.MidiOutStream):
     if self.ignored: return
     #print("note_off", channel, note, velocity, self.abs_time())
     if not note in noteMap:
+      return
+    if noteMap[note][0] != self.difficulty.id:
       return
     try:
       startTime = self.heldNotes[(self.get_current_track(), channel, note)]

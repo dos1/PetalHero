@@ -19,6 +19,13 @@ data_sizes = {
     PITCH_BEND:2,
 }
 
+data_sizes_system_common = {
+    MTC:1,
+    SONG_POSITION_POINTER:2,
+    SONG_SELECT:1,
+}
+
+
 class MidiFileParser:
 
     """
@@ -134,6 +141,24 @@ class MidiFileParser:
                     self.ignored = res
                 if meta_type == END_OF_TRACK:
                     return
+            # Is it a sysex_event ??
+            elif status == SYSTEM_EXCLUSIVE:
+                # ignore sysex events
+                sysex_length = raw_in.readVarLen()
+                # don't read sysex terminator
+                sysex_data = raw_in.nextSlice(sysex_length-1)
+                # only read last data byte if it is a sysex terminator
+                # It should allways be there, but better safe than sorry
+                if raw_in.readBew(move_cursor=0) == END_OFF_EXCLUSIVE:
+                    eo_sysex = raw_in.readBew()
+                dispatch.sysex_event(sysex_data)
+                # the sysex code has not been properly tested, and might be fishy!
+            # is it a system common event?
+            elif hi_nible == 0xF0: # Hi bits are set then
+                data_size = data_sizes_system_common.get(hi_nible, 0)
+                common_data = raw_in.nextSlice(data_size)
+                common_type = lo_nible
+                dispatch.system_common(common_type, common_data)
             # Oh! Then it must be a midi event (channel voice message)
             else:
                 data_size = data_sizes.get(hi_nible, 0)

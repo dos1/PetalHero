@@ -10,17 +10,21 @@ caveat: you need to mix audio tracks together and save them as MP3.
 
 This should do:
 
-  sox -m *.ogg -c 1 -C 128 -r 48k song.mp3 norm -3
+  sox *.ogg -m -G -c 1 -C 128 -r 48k --norm=-3 song.mp3
+
+Some Guitar Hero rips may need to be resampled first:
+
+  for i in *.ogg; do sox $i -G -r 48k $i.flac; done
+  sox *.flac -m -G -c 1 -C 128 -r 48k --norm=-3 song.mp3
 
 You need song.ini, song.mp3 and notes.mid in the song directory.
 
 Songs in .chart format (and some others) can be converted using EOF:
 https://github.com/raynebc/editor-on-fire
 
-Some places to find charted songs:
+Some places to find charted songs at:
  - https://chorus.fightthe.pw/
  - https://db.c3universe.com/songs/
- - https://docs.google.com/spreadsheets/u/0/d/13B823ukxdVMocowo1s5XnT3tzciOfruhUVePENKc01o/htmlview
 
 Have fun!
 """
@@ -40,6 +44,6 @@ def install():
         l = []
 
     if not "README" in l:
-        with open("/sd/PetalHero/README", "w") as file:
+        with open("/sd/PetalHero/README.TXT", "w") as file:
             file.write(README)
-    #save_file_if_changed("/sd/PetalHero/README", README)
+    #save_file_if_changed("/sd/PetalHero/README.TXT", README)
