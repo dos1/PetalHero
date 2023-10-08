@@ -117,7 +117,7 @@ class SelectView(BaseView):
         self.flower.draw(ctx)
         ctx.restore()
                 
-        if self.processing_now and self.is_active():
+        if self.processing_now and self.is_active() and not self.vm.transitioning:
             self.processing_now.load()
             self.processing_now.getDifficulties()
             self.processing_now.saveDifficulties()

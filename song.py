@@ -97,6 +97,7 @@ class SongView(BaseView):
             self.mid_bpm = 60000.0 / self.mid_period
         else:
             self.mid_bpm = (max(self.data.tempoMarkers, key=lambda x: x[1])[1] + min(self.data.tempoMarkers, key=lambda x: x[1])[1]) / 2
+            self.mid_bpm = (self.mid_bpm + self.bpm * 2) / 3
             self.mid_period = 60000.0 / self.mid_bpm
 
         self.current_beat = 0
@@ -293,11 +294,11 @@ class SongView(BaseView):
             buf = sys_scope.get_buffer_x()
             ctx.move_to(-120, 0)
             for i in range(0, len(buf), 32):
-                val = max(-180, min(180, buf[i] / 16))
-                ctx.line_to(-120 + i, max(6, val))
+                val = max(-180, min(180, buf[i] / 24))
+                ctx.line_to(-120 + i, max(12, math.sqrt(abs(val)/180) * 180))
             for i in range(len(buf) - 1, 0, -32):
-                val = max(-180, min(180, buf[i] / 16))
-                ctx.line_to(-120 + i, min(-6, val))
+                val = max(-180, min(180, buf[i] / 24))
+                ctx.line_to(-120 + i, min(-12, -math.sqrt(abs(val)/180) * 180))
             ctx.fill()
         else:
             ctx.move_to(-120, 0)
@@ -496,7 +497,7 @@ class SongView(BaseView):
             self.events.clear()
 
         for event in self.events:
-            if event.time - delta_time <= self.time and self.time <= event.time + max(event.length, 50):
+            if event.time - delta_time <= self.time and self.time <= event.time + max(event.length, 75):
                 self.notes.add(event.number)
             if self.time - lateMargin - delta_time <= event.time <= self.time + earlyMargin:
                 self.events_in_margin.add(event)
