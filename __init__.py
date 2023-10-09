@@ -25,9 +25,9 @@ try:
 except ImportError:
     UNSUPPORTED = True
 
+from . import utils
 if not UNSUPPORTED:
     from . import flower
-    from . import utils
     from . import select
     from . import readme
 
@@ -209,7 +209,6 @@ class PetalHero(Application):
         if UNSUPPORTED:
             return
         media.stop()
-        leds.set_slew_rate(255)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
