@@ -393,7 +393,7 @@ class SongView(BaseView):
             self.loaded = True
             media.load(self.song.dirName + '/song.mp3', True)
             
-        if self.song and self.song.loaded and self.time >= -self.song.delay and not self.started:
+        if self.song and self.loaded and self.time >= -self.song.delay and not self.started:
             self.started = True
             media.play()
 

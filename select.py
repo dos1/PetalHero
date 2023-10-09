@@ -3,9 +3,11 @@ from st3m.ui.interactions import ScrollController
 import math
 import os, stat
 import time
+import leds
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
+    import st3m.ui.led_patterns
 except ImportError:
     pass
 
@@ -53,7 +55,7 @@ def discover_songs_at(path: str, songs: list, to_process: set, dirs: set):
             dirs.add(dirpath)
             continue
 
-        s = LazySong(dirpath)
+        s = songinfo.SongInfo(dirpath)
         s.load()
         songs.append(s)
 
@@ -83,6 +85,7 @@ class SelectView(BaseView):
         self.repeat_count = 0
         self.first_scroll_think = False
         self.letter_timeout = 0
+        self.show_artist = False
         
     def _discover_songs(self):
         dirs = {"/sd/PetalHero", "/flash/PetalHero", self.app.path + "/songs"}
@@ -199,11 +202,12 @@ class SelectView(BaseView):
                     song.load()
                     xpos = 0.0
                     ctx.font_size = 24 - abs(distance) * 3
-                    if target and (width := ctx.text_width(song.name)) > 220:
+                    text = song.artist if self.show_artist and target else song.name
+                    if target and (width := ctx.text_width(text)) > 220:
                         xpos = math.sin(self._scroll_pos) * (width - 220) / 2
                     ctx.move_to(xpos, offset + distance * abs(distance) * 2)
                     ctx.global_alpha = max(0.0, 1.0 - abs(distance) / 2.5)
-                    ctx.text(song.name)
+                    ctx.text(text)
                     ctx.global_alpha = 1.0
                 offset += 30
 
@@ -268,17 +272,28 @@ class SelectView(BaseView):
         if self.letter_timeout > 0:
             self.letter_timeout -= delta_ms / 1000.0
 
+        self.show_artist = ins.captouch.petals[5].pressed
+        
+        if self.input.captouch.petals[5].whole.pressed or self.input.captouch.petals[5].whole.released:
+            self._scroll_pos = math.pi / 2
+
         if self.input.buttons.app.left.pressed or (self.input.buttons.app.left.repeated and not self._sc.at_left_limit()):
             utils.play_crunch(self.app)
             if self.input.buttons.app.left.pressed:
-                self._sc.scroll_left()
+                if self._sc.at_left_limit():
+                    self._sc.scroll_to(len(self.songs) - 1)
+                else:
+                    self._sc.scroll_left()
             else:
                 self._sc.scroll_to(self._sc.target_position() - (4 if self.repeat_count > 4 else 1))
             self._scroll_pos = 0.0
         elif self.input.buttons.app.right.pressed or (self.input.buttons.app.right.repeated and not self._sc.at_right_limit()):
             utils.play_crunch(self.app)
             if self.input.buttons.app.right.pressed:
-                self._sc.scroll_right()
+                if self._sc.at_right_limit():
+                    self._sc.scroll_to(0)
+                else:
+                    self._sc.scroll_right()
             else:
                 self._sc.scroll_to(self._sc.target_position() + (4 if self.repeat_count > 4 else 1))
             self._scroll_pos = 0.0
@@ -312,6 +327,13 @@ class SelectView(BaseView):
             
         if pos != cur_target:
             self.play()
+            
+        if self.is_active() and not self.processing_now and not self.to_process and not self.loading and len(self.songs):
+            if self.show_artist:
+                st3m.ui.led_patterns.highlight_petal_rgb(5, 0.5, 0.5, 0.5)
+            else:
+                st3m.ui.led_patterns.highlight_petal_rgb(5, 0.42, 0.42, 0.42)
+            leds.update()
 
     def on_enter(self, vm: Optional[ViewManager]) -> None:
         super().on_enter(vm)
@@ -320,6 +342,7 @@ class SelectView(BaseView):
                 self.play()
             if self.app:
                 self.app.after_score = False
+        leds.set_slew_rate(192)
 
     def play(self):
         if self.songs:
@@ -335,4 +358,6 @@ class SelectView(BaseView):
         super().on_exit()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
+        leds.set_all_rgb(0, 0, 0)
+        leds.update()
         return True

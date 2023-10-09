@@ -53,6 +53,9 @@ class SongInfo(object):
     except Exception as e:
       print(f"Exception while reading {infoFileName}: {e}")
 
+  def load(self):
+    return self
+
   def _set(self, attr, value):
     if not self.info.has_section("song"):
       self.info.add_section("song")
