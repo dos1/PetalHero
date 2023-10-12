@@ -15,8 +15,9 @@ import st3m.run
 import st3m.settings
 import leds
 import bl00mbox
-from time import sleep
+import time
 import sys_display
+import _thread
 
 UNSUPPORTED = False
 try:
@@ -30,6 +31,27 @@ if not UNSUPPORTED:
     from . import flower
     from . import select
     from . import readme
+    
+led_lock = _thread.allocate_lock()
+blm_lock = _thread.allocate_lock()
+
+def led_thread(app):
+    start = time.ticks_ms()
+    while app.is_active():
+        if led_lock.acquire(0):
+            leds.set_all_rgb(0, 0, 0)
+            for i in range(5):
+                utils.petal_leds(i, pow(-math.cos((time.ticks_ms() - start) / 1000) / 2 + 0.5, 1 / 2.2))
+            leds.update()
+            led_lock.release()
+            
+def blm_thread(app, num):
+    time.sleep(1.0)
+    if blm_lock.acquire(1):
+        if app.unloading == num:
+            app.unloading = 0
+            app.unload()
+        blm_lock.release()
 
 class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
@@ -50,13 +72,20 @@ class PetalHero(Application):
         #self.blm_extra.background_mute_override = True
         
         self.blm_timeout = 1
+        self.unloading = 0
+        self.unloading_num = 1
 
         readme.install()
 
     #def show_icons(self): return True
 
     def load(self):
+        blm_lock.acquire(1)
+        self.unloading = 0
+        blm_lock.release()
+
         if self.loaded:
+            self.blm.foreground = True
             return
 
         self.blm = bl00mbox.Channel("Petal Hero")
@@ -170,12 +199,6 @@ class PetalHero(Application):
             media.seek(0)
 
         #leds.set_brightness(32 - int(math.cos(self.time) * 32))
-        leds.set_all_rgb(0, 0, 0)
-
-        for i in range(5):
-            utils.petal_leds(i, pow(-math.cos(self.time) / 2 + 0.5, 1 / 2.2))
-
-        leds.update()
 
         if self.input.buttons.app.middle.pressed:
             utils.play_go(self.app)
@@ -188,18 +211,19 @@ class PetalHero(Application):
         super().on_enter(vm)
         if UNSUPPORTED:
             return
-        if not self.loaded:
-            self.load()
-        else:
-            self.blm.foreground = True
+        self.load()
         media.set_volume(1.0)
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
-        leds.set_slew_rate(255)
+        led_lock.acquire(1)
         leds.set_all_rgb(0, 0, 0)
+        leds.update()
+        led_lock.release()
+        leds.set_slew_rate(255)
         leds.set_gamma(2.2, 2.2, 2.2)
         leds.set_auto_update(False)
         leds.set_brightness(int(pow(st3m.settings.num_leds_brightness.value / 255, 1/2.2) * 255))
+        _thread.start_new_thread(led_thread, (self,))
 
     def on_enter_done(self):
         leds.set_slew_rate(42)
@@ -209,19 +233,17 @@ class PetalHero(Application):
         if UNSUPPORTED:
             return
         media.stop()
+        led_lock.acquire(1)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
+        led_lock.release()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
+            self.unloading = self.unloading_num
+            self.unloading_num += 1
+            _thread.start_new_thread(blm_thread, (self, self.unloading))
         return True
             
-    def on_exit_done(self):
-        if UNSUPPORTED:
-            return
-        if self.vm.direction == ViewTransitionDirection.BACKWARD:
-            sleep(0.4)
-            self.unload()
-
 if not __path__:
     for i in range(1,32):
         bl00mbox.Channel(i).clear()
