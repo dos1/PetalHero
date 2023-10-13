@@ -5,6 +5,8 @@ import os
 import time
 import sys_bl00mbox
 
+VERSION = "0.0"
+
 SONGS_REPO = "https://git.flow3r.garden/dos/PetalHero-songs"
 # alternative url: "https://gitlab.com/dosowisko.net/PetalHero-songs"
 

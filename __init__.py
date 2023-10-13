@@ -8,6 +8,7 @@ if __name__ == '__main__':
     __path__ = None
 
 import math
+from st3m.ui.interactions import ScrollController
 from st3m.ui.colours import *
 from st3m.ui.view import ViewTransitionSwipeLeft
 from st3m.application import Application, ApplicationContext
@@ -74,6 +75,10 @@ class PetalHero(Application):
         self.blm_timeout = 1
         self.unloading = 0
         self.unloading_num = 1
+        
+        self.sc = ScrollController()
+        self.sc.set_item_count(2)
+        self.show_artist = False
 
         readme.install()
 
@@ -138,32 +143,119 @@ class PetalHero(Application):
         utils.background(ctx)
 
         ctx.save()
-        ctx.translate(0, -10)
+        ctx.translate(-240 * self.sc.current_position(), 0)
 
-        ctx.rgba(0.1, 0.4, 0.3, 0.42)
-        self.flower.draw(ctx)
+        if self.sc.current_position() < 1.0:
+            ctx.save()
+            ctx.translate(0, -10)
 
-        utils.fire_gradient(ctx)
+            ctx.rgba(0.1, 0.4, 0.3, 0.42)
+            self.flower.draw(ctx)
 
-        #ctx.rgb(0.1, 0.4, 0.3)
-        ctx.font = "Camp Font 2"
-        ctx.font_size = 90
-        ctx.text_align = ctx.CENTER
-        ctx.text_baseline = ctx.MIDDLE
-        ctx.move_to (0, -28)
-        ctx.text("PETAL")
-        ctx.move_to (0, 28)
-        ctx.text("HERO")
+            utils.fire_gradient(ctx)
+
+            #ctx.rgb(0.1, 0.4, 0.3)
+            ctx.font = "Camp Font 2"
+            ctx.font_size = 90
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.move_to (0, -28)
+            ctx.text("PETAL")
+            ctx.move_to (0, 28)
+            ctx.text("HERO")
+
+            ctx.restore()
+
+            ctx.font = "Camp Font 3"
+            ctx.font_size = 16
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.gray(1.0)
+            ctx.move_to(0, 74 + math.sin(self.time * 4) * 4)
+            ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
+
+            ctx.rgba(1.0, 1.0, 1.0, 0.33 * (1- self.sc.current_position()))
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.move_to(105, 10)
+            ctx.font = "Material Icons"
+            ctx.font_size = 18
+            ctx.text("\ue5c8")
+
+        if self.sc.current_position() > 0.0:
+            ctx.translate(240, 0)
+
+            ctx.save()
+            ctx.translate(0, -85)
+            ctx.scale(0.333, 0.333)
+            ctx.rgba(0.1, 0.4, 0.3, 0.42)
+            self.flower.draw(ctx)
+            ctx.restore()
+
+            utils.fire_gradient(ctx)
+
+            #ctx.rgb(0.1, 0.4, 0.3)
+            ctx.font = "Camp Font 2"
+            ctx.font_size = 32
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.move_to (0, -85)
+            ctx.text("PETAL HERO")
+            
+            ctx.gray(0.75)
+            ctx.font = "Camp Font 3"
+            ctx.font_size = 14
+            ctx.move_to(0, -63)
+            ctx.text(f"Version {utils.VERSION}")
+            
+            ctx.font_size = 16
+            ctx.move_to(0, -35)
+            ctx.text("Made by")
+            ctx.move_to(0, -18)
+            ctx.gray(1.0)
+            ctx.text("dos" if self.show_artist else "Sebastian Krzyszkowiak")
+
+            ctx.rgb(0.102, 0.09, 0.094)
+            ctx.rectangle(-119 - int(self.sc.current_position()), 0, 479 + int(self.sc.current_position()), 1)
+            ctx.fill()
+
+            ctx.rgb(0.137, 0.122, 0.125)            
+            if self.sc.current_position() > 1.0:
+                """
+                ctx.linear_gradient(0, 0, 1, 1)
+                ctx.add_stop(0.0, (0.137, 0.122, 0.125), 1.0)
+                ctx.add_stop(1.0, (0.102, 0.09, 0.094), 1.0)
+                """
+                ctx.rectangle(-120, 1, 480, 60)
+            elif self.sc.current_position() == 1.0:
+                ctx.rectangle(-120, 1, 240, 25)
+            ctx.fill()
+            ctx.image_smoothing = False
+            ctx.image(self.path + ("/img/dosowisko1.png" if (time.ticks_ms() // 500) % 2 else "/img/dosowisko2.png"), -120, 0, -1, -1)
+
+            ctx.rgb(0.102, 0.09, 0.094)
+            ctx.rectangle(-119, 60, 479, 1)
+            if self.sc.current_position() < 1.0:
+                ctx.rectangle(-119, 0, 1, 61)
+            ctx.fill()
+
+            ctx.gray(0.75)
+            ctx.move_to(0, 78)
+            ctx.text("Licensed under GPLv3")
+
+            ctx.font_size = 15
+            ctx.move_to(0, 102)
+            ctx.text("© 2023")
+
+            ctx.rgba(1.0, 1.0, 1.0, 0.33 * self.sc.current_position())
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.move_to(-105, 10)
+            ctx.font = "Material Icons"
+            ctx.font_size = 18
+            ctx.text("\ue5c4")
 
         ctx.restore()
-
-        ctx.font = "Camp Font 3"
-        ctx.font_size = 16
-        ctx.text_align = ctx.CENTER
-        ctx.text_baseline = ctx.MIDDLE
-        ctx.gray(1.0)
-        ctx.move_to(0, 70 + math.sin(self.time * 4) * 4)
-        ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
 
     def unload(self):
         if not self.loaded:
@@ -186,6 +278,7 @@ class PetalHero(Application):
         media.think(delta_ms)
         self.flower.think(delta_ms)
         utils.blm_timeout(self, delta_ms)
+        self.sc.think(ins, delta_ms)
 
         if self.time < 0:
             self.time = 0
@@ -204,8 +297,16 @@ class PetalHero(Application):
             utils.play_go(self.app)
             self.vm.push(self.select, ViewTransitionSwipeLeft())
             
-        if self.is_active() and not self.vm.transitioning:
+        if self.input.buttons.app.left.pressed:
+            self.sc.scroll_left()
+
+        if self.input.buttons.app.right.pressed:
+            self.sc.scroll_right()
+            
+        if not self.vm.transitioning:
             self.select.discover(20, False)
+            
+        self.show_artist = ins.captouch.petals[5].pressed
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
@@ -223,6 +324,7 @@ class PetalHero(Application):
         leds.set_gamma(2.2, 2.2, 2.2)
         leds.set_auto_update(False)
         leds.set_brightness(int(pow(st3m.settings.num_leds_brightness.value / 255, 1/2.2) * 255))
+        self.sc.set_position(0.0)
         _thread.start_new_thread(led_thread, (self,))
 
     def on_enter_done(self):
