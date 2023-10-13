@@ -298,9 +298,11 @@ class PetalHero(Application):
             self.vm.push(self.select, ViewTransitionSwipeLeft())
             
         if self.input.buttons.app.left.pressed:
+            utils.play_crunch(self.app)
             self.sc.scroll_left()
 
         if self.input.buttons.app.right.pressed:
+            utils.play_crunch(self.app)
             self.sc.scroll_right()
             
         if not self.vm.transitioning:
