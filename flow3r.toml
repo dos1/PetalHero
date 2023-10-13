@@ -1,6 +1,6 @@
 [app]
 name = "Petal Hero"
-menu = "Music"
+menu = "Games"
 wifi_preference = false
 
 [entry]
@@ -10,5 +10,5 @@ class = "PetalHero"
 author = "dos"
 license = "GPL-3.0-or-later"
 url = "https://git.flow3r.garden/dos/PetalHero"
-description = "Frets on Fire-compatible rhythm game"
+description = "Rhythm game compatible with Frets on Fire"
 version = 0
