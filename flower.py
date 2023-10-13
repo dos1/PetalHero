@@ -1,13 +1,18 @@
 class Flower:
-    def __init__(self, rot_speed: float) -> None:
+    def __init__(self, rot_speed: float, x = 0, y = 0, scale = 1.0) -> None:
         self.rot = 0.0
         self.rot_speed = rot_speed
+        self.x = x
+        self.y = y
+        self.scale = scale
 
     def think(self, delta_ms: float) -> None:
         self.rot += float(delta_ms) * self.rot_speed
 
     def draw(self, ctx: Context, fill: bool = True) -> None:
         ctx.save()
+        ctx.translate(self.x, self.y)
+        ctx.scale(self.scale, self.scale)
         ctx.rotate(self.rot)
         ctx.translate(-74, -74)
         ctx.begin_path()

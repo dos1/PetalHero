@@ -5,6 +5,9 @@ import os
 import time
 import sys_bl00mbox
 
+SONGS_REPO = "https://git.flow3r.garden/dos/PetalHero-songs"
+# alternative url: "https://gitlab.com/dosowisko.net/PetalHero-songs"
+
 def dim(color, val):
     res = []
     for i in range(len(color)):

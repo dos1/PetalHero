@@ -1,4 +1,4 @@
-from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft
+from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionBlend
 from st3m.ui.interactions import ScrollController
 import math
 import os, stat
@@ -15,6 +15,7 @@ from . import flower
 from . import difficulty
 from . import songinfo
 from . import utils
+from . import connecting
 
 class LazySong(songinfo.SongInfo):
     def __init__(self, dirpath):
@@ -86,6 +87,7 @@ class SelectView(BaseView):
         self.first_scroll_think = False
         self.letter_timeout = 0
         self.show_artist = False
+        self.sd_card_present = utils.sd_card_present()
         
     def _discover_songs(self):
         dirs = {"/sd/PetalHero", "/flash/PetalHero", self.app.path + "/songs"}
@@ -189,6 +191,14 @@ class SelectView(BaseView):
                 ctx.gray(0.0)
                 ctx.font_size = 24
                 ctx.text("No songs found!")
+                
+                if self.sd_card_present:
+                    ctx.gray(0.8)
+                    ctx.move_to(0, 32)
+                    ctx.font_size = 17
+                    ctx.text("Press the button to")
+                    ctx.move_to(0, 48)
+                    ctx.text("download the Starter Pack.")
 
             for idx, song in enumerate(self.songs):
                 distance = self._sc.current_position() - idx
@@ -317,6 +327,8 @@ class SelectView(BaseView):
             utils.play_go(self.app)
             if self.songs:
                 self.vm.push(difficulty.DifficultyView(self.app, self.songs[pos]), ViewTransitionSwipeLeft())
+            elif self.sd_card_present:
+                self.vm.replace(connecting.ConnectingView(self.app), ViewTransitionBlend())
 
         if self.first_scroll_think:
             self._sc.think(ins, min(20, delta_ms))

@@ -86,7 +86,7 @@ class SongInfo(object):
         for b in diffs:
           self._difficulties.append(difficulties[int(b)])
       #if not self._difficulties:
-      #    os.unlink(diffFileName) # unlink's broken
+      #    os.unlink(diffFileName) # TODO: unlink's broken
       #    raise Exception
       self._difficulties.sort(key = lambda a: a.id, reverse=True)
       return self._difficulties
