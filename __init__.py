@@ -177,7 +177,7 @@ class PetalHero(Application):
             ctx.rgba(1.0, 1.0, 1.0, 0.33 * (1- self.sc.current_position()))
             ctx.text_align = ctx.CENTER
             ctx.text_baseline = ctx.MIDDLE
-            ctx.move_to(105, 10)
+            ctx.move_to(105, 4)
             ctx.font = "Material Icons"
             ctx.font_size = 18
             ctx.text("\ue5c8")
@@ -250,7 +250,7 @@ class PetalHero(Application):
             ctx.rgba(1.0, 1.0, 1.0, 0.33 * self.sc.current_position())
             ctx.text_align = ctx.CENTER
             ctx.text_baseline = ctx.MIDDLE
-            ctx.move_to(-105, 10)
+            ctx.move_to(-105, 4)
             ctx.font = "Material Icons"
             ctx.font_size = 18
             ctx.text("\ue5c4")
