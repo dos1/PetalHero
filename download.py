@@ -50,17 +50,24 @@ def download_thread(self):
             req = urequests.get(self.current_song[0] + self.current_song[1])
             if req.status_code != 200:
                 raise Exception(req.status_code)
-            total_size = int(req.headers["Content-Length"])
-            rec_size = 0
             file_name = f"{dirname}/{self.current_song[1]}"
+            total_size = int(req.headers["Content-Length"])
+            
+            if os.path.exists(file_name):
+                stat = os.stat(file_name)
+                if stat[6] == total_size:
+                    req.close()
+                    self.file_progress = 1.0
+                    continue
+            
+            rec_size = 0
             with open(file_name, "wb") as f:
                 try:
                     while True:
-                        new_data = req.raw.read(10240)
+                        new_data = req.raw.read(1024 * 32)
                         rec_size += len(new_data)
-                        f.write(new_data)
-                        #print(rec_size, total_size)
                         self.file_progress = rec_size / total_size
+                        f.write(new_data)
                         if self.cancel:
                             raise Exception("Cancelled")
                         if not new_data:
