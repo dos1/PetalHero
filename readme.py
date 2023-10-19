@@ -1,6 +1,9 @@
 from . import utils
 import os
-#from st3m.utils import save_file_if_changed
+try:
+    from st3m.utils import save_file_if_changed
+except ImportError:
+    pass
 
 README = """Put your Petal Hero songs here.
 
@@ -43,7 +46,4 @@ def install():
             return
         l = []
 
-    if not "README.TXT" in l:
-        with open("/sd/PetalHero/README.TXT", "w") as file:
-            file.write(README)
-    #save_file_if_changed("/sd/PetalHero/README.TXT", README)
+    save_file_if_changed("/sd/PetalHero/README.TXT", README)
