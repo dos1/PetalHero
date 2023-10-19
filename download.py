@@ -66,8 +66,7 @@ def download_thread(self):
                         if not new_data:
                             break
                 except Exception as e:
-                    # TODO: unlink file
-                    #os.unlink(file_name)
+                    os.unlink(file_name)
                     raise e
                 finally:
                     req.close()
