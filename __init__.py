@@ -10,7 +10,7 @@ if __name__ == '__main__':
 import math
 from st3m.ui.interactions import ScrollController
 from st3m.ui.colours import *
-from st3m.ui.view import ViewTransitionSwipeLeft
+from st3m.ui.view import ViewTransitionSwipeLeft, ViewTransitionNone
 from st3m.application import Application, ApplicationContext
 import st3m.run
 import st3m.settings
@@ -45,6 +45,7 @@ def led_thread(app):
                 utils.petal_leds(i, pow(-math.cos((time.ticks_ms() - start) / 1000) / 2 + 0.5, 1 / 2.2))
             leds.update()
             led_lock.release()
+        time.sleep_ms(25)
             
 def blm_thread(app, num):
     time.sleep(1.0)
@@ -79,6 +80,7 @@ class PetalHero(Application):
         self.sc = ScrollController()
         self.sc.set_item_count(2)
         self.show_artist = False
+        self.reentry = False
 
         readme.install()
 
@@ -174,13 +176,14 @@ class PetalHero(Application):
             ctx.move_to(0, 74 + math.sin(self.time * 4) * 4)
             ctx.text(f"Press the button...") # {sys_display.fps():.2f}")
 
-            ctx.rgba(1.0, 1.0, 1.0, 0.33 * (1- self.sc.current_position()))
-            ctx.text_align = ctx.CENTER
-            ctx.text_baseline = ctx.MIDDLE
-            ctx.move_to(105, 4)
-            ctx.font = "Material Icons"
-            ctx.font_size = 18
-            ctx.text("\ue5c8")
+            if self.is_active():
+                ctx.rgba(1.0, 1.0, 1.0, 0.33 * (1- self.sc.current_position()))
+                ctx.text_align = ctx.CENTER
+                ctx.text_baseline = ctx.MIDDLE
+                ctx.move_to(105, 4)
+                ctx.font = "Material Icons"
+                ctx.font_size = 18
+                ctx.text("\ue5c8")
 
         if self.sc.current_position() > 0.0:
             ctx.translate(240, 0)
@@ -285,6 +288,12 @@ class PetalHero(Application):
         else:
             self.time += delta_ms / 1000
 
+        if self.input.buttons.os.middle.pressed and self.sc.target_position() == 1:
+            self.vm.push(self, ViewTransitionNone())
+            self.sc.scroll_to(0)
+            utils.play_crunch(self.app)
+            self.reentry = True
+
         if not self.is_active():
             return
 
@@ -314,6 +323,9 @@ class PetalHero(Application):
         super().on_enter(vm)
         if UNSUPPORTED:
             return
+        if self.reentry:
+            self.reentry = False
+            return
         self.load()
         media.set_volume(1.0)
         media.load(self.path + '/sounds/menu.mp3')
@@ -334,7 +346,7 @@ class PetalHero(Application):
 
     def on_exit(self):
         super().on_exit()
-        if UNSUPPORTED:
+        if UNSUPPORTED or self.reentry:
             return
         media.stop()
         led_lock.acquire(1)
