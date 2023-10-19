@@ -88,6 +88,8 @@ class ConnectingView(BaseView):
         self.index = None
         self.thread = False
         self.error = False
+
+    def on_enter_done(self):
         if st3m.settings.onoff_wifi_preference.value:
             st3m.wifi.setup_wifi()
 
