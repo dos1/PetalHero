@@ -7,7 +7,7 @@ if __name__ == '__main__':
     sys.path.append(__path__)
     __path__ = None
 
-from st3m.ui.view import BaseView, ViewTransitionBlend
+from st3m.ui.view import BaseView, ViewTransitionBlend, ViewTransitionDirection
 import st3m.run
 import math
 import random
@@ -263,7 +263,8 @@ class DownloadView(BaseView):
         _thread.start_new_thread(download_thread, (self,))
 
     def on_exit(self):
-        utils.play_back(self.app)
+        if self.vm.direction == ViewTransitionDirection.BACKWARD:
+            utils.play_back(self.app)
         if not self.error:
             self.cancel = True
         leds.set_slew_rate(255)
