@@ -4,6 +4,10 @@ import random
 import os
 import time
 import sys_bl00mbox
+try:
+    from st3m.utils import sd_card_plugged as sd_card_present
+except ImportError:
+    pass
 
 VERSION = "0.0"
 
@@ -101,14 +105,6 @@ def circle(ctx, x, y, r):
     ctx.curve_to(x + r, y + (c * r), x + (c * r), y + r, x, y + r)
     ctx.curve_to(x - (c * r), y + r, x - r, y + (c * r), x - r, y)
     ctx.stroke()
-
-def sd_card_present() -> bool:
-    try:
-        os.listdir("/sd")
-        return True
-    except OSError:
-        # OSError: [Errno 19] ENODEV
-        return False
 
 def timed_function(f, *args, **kwargs):
     myname = str(f).split(' ')[1]
