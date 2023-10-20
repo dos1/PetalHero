@@ -10,7 +10,7 @@ if __name__ == '__main__':
 import math
 from st3m.ui.interactions import ScrollController
 from st3m.ui.colours import *
-from st3m.ui.view import ViewTransitionSwipeLeft, ViewTransitionNone
+from st3m.ui.view import ViewTransitionSwipeLeft
 from st3m.application import Application, ApplicationContext
 import st3m.run
 import st3m.settings
@@ -23,7 +23,7 @@ import _thread
 UNSUPPORTED = False
 try:
     import media
-    from st3m.ui.view import ViewTransitionDirection
+    from st3m.ui.view import ViewTransitionDirection, ViewTransitionNone
 except ImportError:
     UNSUPPORTED = True
 
@@ -59,10 +59,10 @@ class PetalHero(Application):
     def __init__(self, app_ctx: ApplicationContext) -> None:
         super().__init__(app_ctx)
         self.app = self
-        self.path = app_ctx.bundle_path
-        
         if UNSUPPORTED:
             return
+
+        self.path = app_ctx.bundle_path
 
         self.flower = flower.Flower(0.00125)
         self.loaded = False
