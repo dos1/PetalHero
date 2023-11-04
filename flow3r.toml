@@ -1,6 +1,7 @@
 [app]
 name = "Petal Hero"
-menu = "Games"
+category = "Games"
+menu = "Apps" # fallback for firmwares older than 1.3.0
 wifi_preference = false
 
 [entry]
