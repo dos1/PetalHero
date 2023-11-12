@@ -8,6 +8,8 @@ if __name__ == '__main__':
     __path__ = None
 
 from st3m.ui.view import BaseView, ViewTransitionBlend, ViewTransitionDirection
+from ctx import Context
+from st3m.input import InputState
 import st3m.run
 import math
 import random

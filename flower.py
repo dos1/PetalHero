@@ -1,3 +1,5 @@
+from ctx import Context
+
 class Flower:
     def __init__(self, rot_speed: float, x = 0, y = 0, scale = 1.0) -> None:
         self.rot = 0.0

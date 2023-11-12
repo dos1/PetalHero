@@ -1,5 +1,7 @@
 from st3m.ui.view import BaseView, ViewTransitionBlend
 from st3m.ui.interactions import ScrollController
+from st3m.input import InputState
+from ctx import Context
 import math
 try:
     import media

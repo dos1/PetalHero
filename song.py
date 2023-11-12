@@ -1,6 +1,9 @@
 from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeRight, ViewTransitionBlend
+from st3m.input import InputState
 from st3m.ui.colours import *
 from st3m.utils import tau
+from ctx import Context
+from st3m.goose import Optional
 import st3m.run
 import math
 import leds

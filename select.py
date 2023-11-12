@@ -1,5 +1,8 @@
 from st3m.ui.view import BaseView, ViewManager, ViewTransitionSwipeLeft, ViewTransitionBlend
+from st3m.input import InputState
 from st3m.ui.interactions import ScrollController
+from st3m.goose import Optional
+from ctx import Context
 import math
 import os, stat
 import time

@@ -8,6 +8,8 @@ if __name__ == '__main__':
     __path__ = None
 
 from st3m.ui.view import BaseView, ViewTransitionBlend, ViewTransitionDirection
+from st3m.input import InputState
+from ctx import Context
 import st3m.run
 import st3m.wifi
 import st3m.settings

@@ -1,4 +1,7 @@
 from st3m.ui.view import BaseView, ViewManager, ViewTransitionBlend
+from st3m.input import InputState
+from ctx import Context
+from st3m.goose import Optional
 import st3m.run
 import math
 import random
