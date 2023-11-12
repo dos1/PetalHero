@@ -10,8 +10,12 @@ import leds
 import sys_display
 import sys_scope
 import gc
-from micropython import const
 from time import ticks_ms, sleep
+
+try:
+    from micropython import const
+except:
+    const = lambda x: x
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
