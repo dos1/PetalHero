@@ -31,11 +31,18 @@ download_lock = _thread.allocate_lock()
 
 def download_thread(self):
     download_lock.acquire(1)
+    if st3m.utils.sd_card_plugged():
+        rootpath = "/sd/PetalHero"
+    else:
+        rootpath = f"{self.app.path}/songs"
+        if not os.path.exists(rootpath):
+            os.mkdir(rootpath)
+
     while self.file_list and not self.cancel:
         self.current_song = self.file_list.pop(0)
         self.file_no += 1
         self.file_progress = 0
-        dirname = f"/sd/PetalHero/{self.current_song[2]} - {self.current_song[3]}"
+        dirname = f"{rootpath}/{self.current_song[2]} - {self.current_song[3]}"
 
         try:
             l = os.listdir(dirname)

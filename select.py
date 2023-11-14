@@ -3,6 +3,7 @@ from st3m.input import InputState
 from st3m.ui.interactions import ScrollController
 from st3m.goose import Optional
 from ctx import Context
+import st3m.utils
 import math
 import os, stat
 import time
@@ -195,7 +196,7 @@ class SelectView(BaseView):
                 ctx.font_size = 24
                 ctx.text("No songs found!")
                 
-                if self.sd_card_present:
+                if self.sd_card_present or st3m.utils.is_simulator():
                     ctx.gray(0.8)
                     ctx.move_to(0, 32)
                     ctx.font_size = 17
@@ -330,7 +331,7 @@ class SelectView(BaseView):
             utils.play_go(self.app)
             if self.songs:
                 self.vm.push(difficulty.DifficultyView(self.app, self.songs[pos]), ViewTransitionSwipeLeft())
-            elif self.sd_card_present:
+            elif self.sd_card_present or st3m.utils.is_simulator():
                 self.vm.replace(connecting.ConnectingView(self.app), ViewTransitionBlend())
 
         if self.first_scroll_think:
