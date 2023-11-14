@@ -235,14 +235,18 @@ class PetalHero(Application):
             elif self.sc.current_position() == 1.0:
                 ctx.rectangle(-120, 1, 240, 25)
             ctx.fill()
-            ctx.image_smoothing = False
-            ctx.image(self.path + ("/img/dosowisko1.png" if (time.ticks_ms() // 500) % 2 else "/img/dosowisko2.png"), -120, 0, -1, -1)
 
             ctx.rgb(0.102, 0.09, 0.094)
             ctx.rectangle(-119, 60, 479, 1)
-            if self.sc.current_position() < 1.0:
-                ctx.rectangle(-119, 0, 1, 61)
             ctx.fill()
+
+            ctx.image_smoothing = False
+            ctx.image(self.path + ("/img/dosowisko1.png" if (time.ticks_ms() // 500) % 2 else "/img/dosowisko2.png"), -120, 0, -1, -1)
+
+            if self.sc.current_position() < 1.0:
+                ctx.rgb(0.102, 0.09, 0.094)
+                ctx.rectangle(-119, 0, 1, 61)
+                ctx.fill()
 
             ctx.gray(0.75)
             ctx.move_to(0, 78)
