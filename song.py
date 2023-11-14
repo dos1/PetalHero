@@ -104,7 +104,7 @@ class SongView(BaseView):
             self.mid_bpm = 60000.0 / self.mid_period
         else:
             self.mid_bpm = (max(self.data.tempoMarkers, key=lambda x: x[1])[1] + min(self.data.tempoMarkers, key=lambda x: x[1])[1]) / 2
-            self.mid_bpm = (self.mid_bpm + self.bpm * 2) / 3
+            self.mid_bpm = (self.mid_bpm + self.bpm * 3) / 4
             self.mid_period = 60000.0 / self.mid_bpm
 
         self.current_beat = 0
@@ -148,7 +148,7 @@ class SongView(BaseView):
     def draw(self, ctx: Context) -> None:
         #mem = gc.mem_alloc()
         #self.redraw = True        
-        start = self.time - INPUT_DELAY + self.mid_period * 4
+        start = self.time - INPUT_DELAY + min(self.mid_period * 4, 1666)
         start_marg = start + self.mid_period * 0.25
         stop = self.time - INPUT_DELAY
 
