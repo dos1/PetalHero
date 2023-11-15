@@ -115,6 +115,13 @@ class SelectView(BaseView):
                 self.play()
             return False
 
+    def refresh(self):
+        for song in list(self.songs):
+            if not os.path.exists(song.dirName + '/song.ini'):
+                self.songs.remove(song)
+                self._sc.set_position(0)
+                self._sc.set_item_count(len(self.songs))
+
     def draw(self, ctx: Context) -> None:
         
         utils.background(ctx)

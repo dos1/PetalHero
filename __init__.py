@@ -84,8 +84,6 @@ class PetalHero(Application):
         self.show_artist = False
         self.reentry = False
 
-        readme.install()
-
     #def show_icons(self): return True
 
     def load(self):
@@ -332,6 +330,10 @@ class PetalHero(Application):
         if self.reentry:
             self.reentry = False
             return
+        if self.vm.direction == ViewTransitionDirection.FORWARD:
+            readme.install()
+            if self.select:
+                self.select.refresh()
         self.load()
         media.set_volume(1.0)
         media.load(self.path + '/sounds/menu.mp3')
