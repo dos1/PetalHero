@@ -243,7 +243,7 @@ class SongView(BaseView):
                     
                 ctx.line_width = 6
                 ctx.line_cap = ctx.NONE
-                if event.length > 120 or (event.missed and not self.demo_mode):
+                if event.length >= min(max(80, self.mid_period / 3), 200) or (event.missed and not self.demo_mode):
                     d = 0.75 if not event.missed or event.played else 0.33
                     if during: d = 1.0
                     ctx.rgb(*utils.dim(utils.PETAL_COLORS[i], d))
