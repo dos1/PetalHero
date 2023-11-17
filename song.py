@@ -71,6 +71,8 @@ class SongView(BaseView):
         self.first_think = False
         self.finished = False
         self.streak = 0
+        self.showstreak = 0.0
+        self.showstreakval = 0
         self.longeststreak = 0
         self.led_override = [0] * 5
         self.laststreak = -1
@@ -284,13 +286,13 @@ class SongView(BaseView):
         ctx.restore()
         
         col = 0.3 * (1.0 - ((((self.beat) % 1)**2) * 0.75))
-        ctx.rgb(min(1.0, col + self.bad * 0.75), col + self.bad * 0.1, col + self.bad * 0.2)
+        ctx.rgb(min(1.0, col + max(self.bad, self.showstreak / 2.5) * 0.75), col + self.bad * 0.1 + self.showstreak * 0.2, col + self.bad * 0.2)
         ctx.begin_path()
         ctx.arc(0, 0, 10 * (1.0 + 0.05 * (self.good - self.miss)), 0, tau, 0)
         ctx.fill()
         
         ctx.save()
-        ctx.rgb(0.5 + self.bad * 0.4, 0.5, 0.5)
+        ctx.rgb(0.5 + max(self.bad, self.showstreak / 2.5) * 0.4, 0.5 + self.showstreak * 0.15, 0.5)
         #ctx.rectangle(-8, -8, 15, 15)
         #ctx.clip()
         ctx.line_width = 12
@@ -326,9 +328,19 @@ class SongView(BaseView):
             ctx.rotate(tau / 5)
         ctx.restore()
         
-        ctx.gray(0.8)
         ctx.text_align = ctx.CENTER
         ctx.text_baseline = ctx.MIDDLE
+        ctx.gray(0.8)
+
+        if self.showstreak:
+            ctx.save()
+            ctx.gray(1.0)
+            ctx.font = "Camp Font 2"
+            ctx.font_size = 25
+            ctx.move_to (0, -1)
+            ctx.global_alpha = min(1.0, self.showstreak * 2)
+            ctx.text(str(self.showstreakval))
+            ctx.restore()
 
         if self.demo_mode:
             ctx.font = "Camp Font 2"
@@ -491,6 +503,7 @@ class SongView(BaseView):
         self.good = max(0, self.good - delta_ms / self.period)
         self.bad = max(0, self.bad - delta_ms / 500)
         self.miss = max(0, self.miss - delta_ms / self.period)
+        self.showstreak = max(0, self.showstreak - delta_ms / 2000)
         for i in range(5):
             self.missed[i] = max(0, self.missed[i] - delta_ms / 1500)
             self.bads[i] = max(0, self.bads[i] - delta_ms / 750)
@@ -595,6 +608,9 @@ class SongView(BaseView):
                 
                 if event.time > self.laststreak:
                     self.streak += 1
+                    if self.streak in (10, 25) or self.streak % 50 == 0:
+                        self.showstreak = 1.0
+                        self.showstreakval = self.streak
                     self.laststreak = event.time
                     if self.debug:
                         print(self.time - event.time, delta_time)
@@ -622,7 +638,7 @@ class SongView(BaseView):
                 self.led_override[petal] = 15
 
             active = self.petals[petal] is not None
-            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else (0.45 if pressed else 0.32)
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else ((0.45 if pressed else 0.32) + self.showstreak * 0.4)
             if d:
                 utils.petal_leds(petal, d)
 
