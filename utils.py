@@ -9,9 +9,9 @@ try:
 except ImportError:
     sd_card_present = lambda: False
 try:
-    import ph
+    import _ph
 except ImportError:
-    ph = None
+    _ph = None
 
 VERSION = "0.0"
 
@@ -125,5 +125,5 @@ def volume(app, vol):
         app.blm.volume = vol
 
 def emit(*args, **kwargs):
-    if ph and ph.emit:
-        ph.emit(*args, **kwargs)
+    if _ph and _ph.emit:
+        _ph.emit(*args, **kwargs)
