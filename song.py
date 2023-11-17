@@ -308,6 +308,7 @@ class SongView(BaseView):
             for i in range(len(buf) - 1, 0, -32):
                 val = max(-180, min(180, buf[i] / 24))
                 ctx.line_to(-120 + i, min(-12, -math.sqrt(abs(val)/180) * 180))
+            ctx.global_alpha = 1.0 - min(1.0, self.showstreak * 2)
             ctx.fill()
         else:
             ctx.move_to(-120, 0)
