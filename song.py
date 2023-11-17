@@ -388,7 +388,7 @@ class SongView(BaseView):
             self.finished = True
             media.stop()
             gc.collect()
-            self.vm.replace(score.ScoreView(self.app, self.data, self.longeststreak, self.difficulty), ViewTransitionBlend())
+            self.vm.replace(score.ScoreView(self.app, self.song, self.data, self.longeststreak, self.difficulty), ViewTransitionBlend())
             return
 
         if self.streak > self.longeststreak:
@@ -400,6 +400,7 @@ class SongView(BaseView):
         if self.song and self.time >= -AUDIO_STARTUP - self.song.delay and not self.loaded:
             self.loaded = True
             media.load(self.song.dirName + '/song.mp3', True)
+            utils.emit("duration", media.get_duration())
             
         if self.song and self.loaded and self.time >= -self.song.delay and not self.started:
             self.started = True
@@ -416,6 +417,7 @@ class SongView(BaseView):
             else:
                 media.pause()
             self.paused = not self.paused
+            utils.emit("pause", self.paused)
 
         if self.input.buttons.app.left.pressed:
             self.fps = not self.fps
@@ -423,6 +425,7 @@ class SongView(BaseView):
 
         if self.input.buttons.app.right.pressed:
             self.demo_mode = not self.demo_mode
+            utils.emit("demo", self.demo_mode)
             if self.demo_mode:
                 media.set_volume(1.0)
 
@@ -522,12 +525,16 @@ class SongView(BaseView):
                         e.missed = True
                         if self.petals[e.number] == e:
                             self.petals[e.number] = None
-                        
+
+                        if not self.demo_mode:
+                            self.missed[e.number] = 1.0
+                            self.miss = 1.0
+                            utils.emit("miss", e.number)
+
                 if not self.demo_mode:
-                    self.missed[event.number] = 1.0
-                    self.miss = 1.0
                     if event.time >= (self.last_played.time if self.last_played else 0) and not self.demo_mode:
                         media.set_volume(0.25)
+
             if event.played and not event.ghost and min(event.time + event.length - lateMargin * 2, event.time + 0.66 * event.length) > self.time:
                 p = 4 if event.number == 0 else event.number - 1
                 if not ins.captouch.petals[p*2].pressed and not event.missed and not event.ghost:
@@ -556,6 +563,7 @@ class SongView(BaseView):
                     if delta_time < DELTA_THRESHOLD and not self.last_state[petal]:
                         #print("fiba", petal, self.time, delta_time)
                         utils.play_fiba(self.app)
+                        utils.emit("bad", petal)
                         self.bad = 1.0
                         self.bads[petal] = 1.0
                         self.streak = 0
@@ -580,6 +588,7 @@ class SongView(BaseView):
                 
             if bad_chord:
                 utils.play_fiba(self.app)
+                utils.emit("bad", event.number)
                 self.bad = 1.0
                 self.bads[event.number] = 1.0
                 self.streak = 0
@@ -595,6 +604,7 @@ class SongView(BaseView):
                 self.led_override[event.number] = 50
                 self.petals[event.number] = event
                 self.good = 1.0
+                utils.emit("good", {"petal": event.number, "streak": self.streak})
                 self.last_played = event
                 self.last_played_petal[event.number] = event
                 media.set_volume(1.0)
@@ -618,7 +628,10 @@ class SongView(BaseView):
         leds.update()
         #gc.collect()
         #print("think", gc.mem_alloc() - mem)
-        
+
+        if self.started:
+            utils.emit("progress", {"time": media.get_time(), "position": media.get_position()})
+
         self.last_time = self.time
         self.first_think = False
 
@@ -630,6 +643,7 @@ class SongView(BaseView):
             media.load(self.app.path + '/sounds/start.mp3')
             utils.volume(self.app, 8000)
         leds.set_slew_rate(238)
+        utils.emit("song", {"name": self.song.name, "artist": self.song.artist, "difficulty": self.difficulty.text, "path": self.song.dirName})
             
     def on_enter_done(self):
         #sys_display.set_mode(sys_display.get_mode() | sys_display.low_latency)
@@ -639,7 +653,6 @@ class SongView(BaseView):
         #gc.disable()
 
     def on_exit(self):
-        super().on_exit()
         #sys_display.set_mode(sys_display.get_mode() & ~sys_display.low_latency)
         leds.set_all_rgb(0, 0, 0)
         leds.update()

@@ -24,6 +24,7 @@ from . import download
 index_lock = _thread.allocate_lock()
 
 def index_thread(self):
+    utils.emit("downloading")
     index_lock.acquire(1)
     try:
         req = urequests.get(f'{utils.SONGS_REPO}/-/raw/main/index.json')
@@ -90,6 +91,7 @@ class ConnectingView(BaseView):
         self.index = None
         self.thread = False
         self.error = False
+        utils.emit("connecting")
 
     def on_enter_done(self):
         if st3m.settings.onoff_wifi_preference.value:

@@ -31,7 +31,7 @@ download_lock = _thread.allocate_lock()
 
 def download_thread(self):
     download_lock.acquire(1)
-    if st3m.utils.sd_card_plugged():
+    if utils.sd_card_present():
         rootpath = "/sd/PetalHero"
     else:
         rootpath = f"{self.app.path}/songs"
@@ -53,6 +53,7 @@ def download_thread(self):
                 print("Could not create song dir!")
                 sys.print_exception(e)
                 self.error = True
+                utils.emit("downloaderror")
                 break
 
         try:
@@ -89,6 +90,7 @@ def download_thread(self):
         except Exception as e:
             sys.print_exception(e)
             self.error = True
+            utils.emit("downloaderror")
             break
     if not self.error:
         try:
@@ -97,6 +99,7 @@ def download_thread(self):
         except Exception as e:
             sys.print_exception(e)
         self.finished = True
+        utils.emit("downloadfinished")
     download_lock.release()
 
 class DownloadView(BaseView):
@@ -242,6 +245,9 @@ class DownloadView(BaseView):
             self.progress = 1.0
         if self.progress < 0:
             self.progress = 0
+
+        if not self.finished and not self.error:
+            utils.emit("downloadprogress", {"progress": self.progress, "file_no": self.file_no, "file_progress": self.file_progress, "files_total": self.files_total})
             
         if not self.is_active():
             return
@@ -275,6 +281,7 @@ class DownloadView(BaseView):
         leds.update()
         leds.set_gamma(1.0, 1.0, 1.0)
         leds.set_brightness(st3m.settings.num_leds_brightness.value)
+        utils.emit("download")
 
         _thread.start_new_thread(download_thread, (self,))
 

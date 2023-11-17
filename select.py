@@ -113,6 +113,7 @@ class SelectView(BaseView):
             self.songs.sort(key=lambda x: x.name.lower())
             if not self.to_process and play:
                 self.play()
+            utils.emit("songlistloaded")
             return False
 
     def refresh(self):
@@ -139,6 +140,7 @@ class SelectView(BaseView):
             self.processing_now.saveDifficulties()
             self.processing_now = None
             if not self.to_process:
+                utils.emit("processingdone")
                 self.play()
             
         if self.to_process and not self.loading:
@@ -366,6 +368,9 @@ class SelectView(BaseView):
             if self.app:
                 self.app.after_score = False
         leds.set_slew_rate(192)
+        utils.emit("select")
+        if self.to_process:
+            utils.emit("processing")
 
     def play(self):
         if self.songs:
@@ -378,7 +383,6 @@ class SelectView(BaseView):
             media.stop()
 
     def on_exit(self):
-        super().on_exit()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
         leds.set_all_rgb(0, 0, 0)

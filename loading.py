@@ -44,6 +44,10 @@ class LoadingView(BaseView):
     def think(self, ins: InputState, delta_ms: int) -> None:
         utils.blm_timeout(self, delta_ms)
         
+    def on_enter(self, vm):
+        super().on_enter(vm)
+        utils.emit("loading", {"name": self.song.name, "artist": self.song.artist, "difficulty": self.difficulty.text, "path": self.song.dirName})
+
     def on_enter_done(self):
         #gc.collect()
         t = time.ticks_ms()

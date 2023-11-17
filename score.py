@@ -20,9 +20,10 @@ from . import utils
 from .midireader import difficulties
 
 class ScoreView(BaseView):
-    def __init__(self, app, data, streak, difficulty):
+    def __init__(self, app, song, data, streak, difficulty):
         super().__init__()
         self.app = app
+        self.song = song
         self.data = data
         self.difficulty = difficulty
         self.flower = flower.Flower(0)
@@ -132,9 +133,9 @@ class ScoreView(BaseView):
         super().on_enter(vm)
         if self.app:
             self.app.after_score = True
+        utils.emit("score", {"name": self.song.name, "artist": self.song.artist, "difficulty": self.difficulty.text, "accuracy": self.accuracy, "streak": self.streak, "stars": self.stars, "path": self.song.dirName})
 
     def on_exit(self):
-        super().on_exit()
         if self.app:
             utils.play_go(self.app)
         return True

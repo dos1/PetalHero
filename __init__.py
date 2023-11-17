@@ -339,12 +339,12 @@ class PetalHero(Application):
         leds.set_brightness(int(pow(st3m.settings.num_leds_brightness.value / 255, 1/2.2) * 255))
         self.sc.set_position(0.0)
         self.start = time.ticks_ms()
+        utils.emit("menu")
 
     def on_enter_done(self):
         leds.set_slew_rate(42)
 
     def on_exit(self):
-        super().on_exit()
         if UNSUPPORTED or self.reentry:
             return
         media.stop()

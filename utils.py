@@ -7,7 +7,11 @@ import sys_bl00mbox
 try:
     from st3m.utils import sd_card_plugged as sd_card_present
 except ImportError:
-    pass
+    sd_card_present = lambda: False
+try:
+    import ph
+except ImportError:
+    ph = None
 
 VERSION = "0.0"
 
@@ -57,7 +61,7 @@ def petal_leds(petal, val, color = None):
 
 def blm_wake(app, timeout):
     if not app or not app.loaded: return
-    if app.blm_timeout == 0:
+    if app.blm_timeout == 0 and sys_bl00mbox.channel_enable:
         sys_bl00mbox.channel_enable(app.blm.channel_num)
     if timeout > app.blm_timeout:
         app.blm_timeout = timeout
@@ -68,7 +72,7 @@ def blm_timeout(view, delta_ms):
     if not view.is_active(): return
     if app.blm_timeout == 0: return
     app.blm_timeout -= delta_ms
-    if app.blm_timeout <= 0:
+    if app.blm_timeout <= 0 and sys_bl00mbox.channel_disable:
         sys_bl00mbox.channel_disable(app.blm.channel_num)
         app.blm_timeout = 0
 
@@ -119,3 +123,7 @@ def timed_function(f, *args, **kwargs):
 def volume(app, vol):
     if app and app.loaded:
         app.blm.volume = vol
+
+def emit(*args, **kwargs):
+    if ph and ph.emit:
+        ph.emit(*args, **kwargs)

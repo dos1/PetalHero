@@ -139,8 +139,11 @@ class DifficultyView(BaseView):
 
         self._sc.think(ins, delta_ms)
 
+    def on_enter(self, vm):
+        super().on_enter(vm)
+        utils.emit("difficulty", {"name": self.song.name, "artist": self.song.artist, "path": self.song.dirName})
+
     def on_exit(self):
-        super().on_exit()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
         return True
