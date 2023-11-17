@@ -34,21 +34,9 @@ if not UNSUPPORTED:
     from . import flower
     from . import select
     from . import readme
-    
-led_lock = _thread.allocate_lock()
+
 blm_lock = _thread.allocate_lock()
 
-def led_thread(app):
-    start = time.ticks_ms()
-    while app.is_active():
-        if led_lock.acquire(0):
-            leds.set_all_rgb(0, 0, 0)
-            for i in range(5):
-                utils.petal_leds(i, pow(-math.cos((time.ticks_ms() - start) / 1000) / 2 + 0.5, 1 / 2.2))
-            leds.update()
-            led_lock.release()
-        time.sleep_ms(25)
-            
 def blm_thread(app, num):
     time.sleep(1.0)
     if blm_lock.acquire(1):
@@ -323,6 +311,11 @@ class PetalHero(Application):
             
         self.show_artist = ins.captouch.petals[5].pressed
 
+        leds.set_all_rgb(0, 0, 0)
+        for i in range(5):
+            utils.petal_leds(i, pow(-math.cos((time.ticks_ms() - self.start) / 1000) / 2 + 0.5, 1 / 2.2))
+        leds.update()
+
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
         if UNSUPPORTED:
@@ -338,16 +331,14 @@ class PetalHero(Application):
         media.set_volume(1.0)
         media.load(self.path + '/sounds/menu.mp3')
         self.time = -1
-        led_lock.acquire(1)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
-        led_lock.release()
         leds.set_slew_rate(255)
         leds.set_gamma(2.2, 2.2, 2.2)
         leds.set_auto_update(False)
         leds.set_brightness(int(pow(st3m.settings.num_leds_brightness.value / 255, 1/2.2) * 255))
         self.sc.set_position(0.0)
-        _thread.start_new_thread(led_thread, (self,))
+        self.start = time.ticks_ms()
 
     def on_enter_done(self):
         leds.set_slew_rate(42)
@@ -357,10 +348,8 @@ class PetalHero(Application):
         if UNSUPPORTED or self.reentry:
             return
         media.stop()
-        led_lock.acquire(1)
         leds.set_all_rgb(0, 0, 0)
         leds.update()
-        led_lock.release()
         if self.vm.direction == ViewTransitionDirection.BACKWARD:
             utils.play_back(self.app)
             self.unloading = self.unloading_num
