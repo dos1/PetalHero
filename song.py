@@ -624,9 +624,9 @@ class SongView(BaseView):
                 media.set_volume(1.0)
 
         col = self.miss / 2
-        if col + self.bad > 1:
-            col -= col + self.bad - 1
-        leds.set_all_rgb(col + self.bad, col, col)
+        if self.bad > 0.5 or self.showstreak > 0.5:
+            col = 0
+        leds.set_all_rgb(col + max(self.showstreak, self.bad), col + (0 if self.bad else self.showstreak) * 0.7, col)
 
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
@@ -638,7 +638,7 @@ class SongView(BaseView):
                 self.led_override[petal] = 15
 
             active = self.petals[petal] is not None
-            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else ((0.45 if pressed else 0.32) + self.showstreak * 0.4)
+            d = 1.0 if (active and self.petals[petal].time + self.petals[petal].length >= self.time) or self.led_override[petal] else ((0.45 if pressed else 0.32) + self.showstreak * 0.35)
             if d:
                 utils.petal_leds(petal, d)
 
