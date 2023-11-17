@@ -397,14 +397,14 @@ class SongView(BaseView):
         if not self.paused and not self.first_think:
             self.time += delta_ms
 
+        if self.song and self.loaded and self.time >= -self.song.delay and not self.started:
+            self.started = True
+            media.play()
+
         if self.song and self.time >= -AUDIO_STARTUP - self.song.delay and not self.loaded:
             self.loaded = True
             media.load(self.song.dirName + '/song.mp3', True)
             utils.emit("duration", media.get_duration())
-            
-        if self.song and self.loaded and self.time >= -self.song.delay and not self.started:
-            self.started = True
-            media.play()
 
         if self.song and self.started and not self.paused:
             t = media.get_time()
