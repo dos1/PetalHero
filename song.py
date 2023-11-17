@@ -5,6 +5,7 @@ from st3m.utils import tau
 from ctx import Context
 from st3m.goose import Optional
 import st3m.run
+import st3m.utils
 import math
 import leds
 import sys_display
@@ -12,10 +13,6 @@ import sys_scope
 import gc
 from time import ticks_ms, sleep
 
-try:
-    from micropython import const
-except:
-    const = lambda x: x
 try:
     import media
     from st3m.ui.view import ViewTransitionDirection
@@ -32,12 +29,14 @@ from . import utils
 from . import flower
 from . import score
 
-AUDIO_STARTUP = const(750) # how early should audio be loaded
-VIDEO_DELAY = const(80) # delay between audio and what's displayed on the screen
-INPUT_DELAY = const(20) # additional headroom for input handling
-DELTA_THRESHOLD = const(60) # above this we assume that there may be missed release events
-RADIUS = const(22)
-tau = const(6.283185307179586)
+AUDIO_STARTUP = 750 # how early should audio be loaded
+VIDEO_DELAY = 85 # delay between audio and what's displayed on the screen
+INPUT_DELAY = 20 # additional headroom for input handling
+DELTA_THRESHOLD = 60 # above this we assume that there may be missed release events
+RADIUS = 22
+
+if st3m.utils.is_simulator():
+    VIDEO_DELAY = 0
 
 class SongView(BaseView):
     def __init__(self, app, song, difficulty):
@@ -214,7 +213,7 @@ class SongView(BaseView):
             utils.circle(ctx, 0, 0, RADIUS)
         
         ctx.save()
-        ctx.rotate(const(tau / 10 + tau / 5))
+        ctx.rotate(tau / 10 + tau / 5)
         for i in range(5):
             for event in self.events:
                 if not event.number == i: continue
