@@ -335,9 +335,11 @@ class SongView(BaseView):
 
         if self.showstreak:
             ctx.save()
+            ctx.scale(1.0 + 0.05 * (self.good - self.miss), 1.0 + 0.05 * (self.good - self.miss))
+            ctx.rotate(wiggle)
             ctx.gray(1.0)
             ctx.font = "Camp Font 2"
-            ctx.font_size = 25
+            ctx.font_size = 24
             ctx.move_to (0, -1)
             ctx.global_alpha = min(1.0, self.showstreak * 2)
             ctx.text(str(self.showstreakval))
