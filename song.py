@@ -542,6 +542,7 @@ class SongView(BaseView):
                         if not self.demo_mode:
                             self.missed[e.number] = 1.0
                             self.miss = 1.0
+                            self.showstreak = 0.0
                             utils.emit("miss", e.number)
 
                 if not self.demo_mode:
@@ -578,6 +579,7 @@ class SongView(BaseView):
                         self.bad = 1.0
                         self.bads[petal] = 1.0
                         self.streak = 0
+                        self.showstreak = 0.0
                 else:
                     event = min(events, key=lambda x: x.time)
                     # mark the first event in the margin as played, and the rest within 3 times delta_time
@@ -603,6 +605,7 @@ class SongView(BaseView):
                 self.bad = 1.0
                 self.bads[event.number] = 1.0
                 self.streak = 0
+                self.showstreak = 0.0
             else:
                 event.played = True
                 
@@ -624,9 +627,9 @@ class SongView(BaseView):
                 media.set_volume(1.0)
 
         col = self.miss / 2
-        if self.bad > 0.5 or self.showstreak > 0.5:
+        if self.bad > 0.5:
             col = 0
-        leds.set_all_rgb(col + max(self.showstreak, self.bad), col + (0 if self.bad else self.showstreak) * 0.7, col)
+        leds.set_all_rgb(col + max(self.showstreak, self.bad), col + self.showstreak * 0.7, col)
 
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
