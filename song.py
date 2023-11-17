@@ -421,7 +421,7 @@ class SongView(BaseView):
 
         if self.input.buttons.app.left.pressed:
             self.fps = not self.fps
-            self.debug = not self.debug
+            #self.debug = not self.debug
 
         if self.input.buttons.app.right.pressed:
             self.demo_mode = not self.demo_mode
