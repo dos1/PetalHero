@@ -557,6 +557,11 @@ class SongView(BaseView):
                 if not ins.captouch.petals[p*2].pressed and not event.missed and not event.ghost:
                     event.missed = True
                     media.set_volume(0.25)
+                    self.miss = 1.0
+                    self.missed[event.number] = 1.0
+                    self.showstreak = 0.0
+                    self.streak = 0
+                    utils.emit("miss", event.number)
 
         played_events = set()
         ghost_events = set()
