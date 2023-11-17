@@ -541,8 +541,6 @@ class SongView(BaseView):
                     event.missed = True
                     media.set_volume(0.25)
 
-        leds.set_all_rgb(0, 0, 0)
-
         played_events = set()
         ghost_events = set()
         for petal in range(5):
@@ -608,6 +606,11 @@ class SongView(BaseView):
                 self.last_played = event
                 self.last_played_petal[event.number] = event
                 media.set_volume(1.0)
+
+        col = self.miss / 2
+        if col + self.bad > 1:
+            col -= col + self.bad - 1
+        leds.set_all_rgb(col + self.bad, col, col)
 
         for petal in range(5):
             p = 4 if petal == 0 else petal - 1
