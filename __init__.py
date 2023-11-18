@@ -53,6 +53,10 @@ class PetalHero(Application):
             return
 
         self.path = app_ctx.bundle_path
+        
+        self.corrupted = os.stat(f"{self.path}/sounds/menu.mp3")[6] == 65536
+        if self.corrupted:
+            return
 
         self.flower = flower.Flower(0.00125)
         self.loaded = False
@@ -129,7 +133,23 @@ class PetalHero(Application):
             ctx.font_size = 16
             ctx.text("Please upgrade and try again.")
             return
-            
+        
+        if self.corrupted:
+            utils.clear(ctx)
+            ctx.font = "Camp Font 3"
+            ctx.text_align = ctx.CENTER
+            ctx.text_baseline = ctx.MIDDLE
+            ctx.gray(1)
+            ctx.font_size = 22
+            ctx.move_to(0, -15)
+            ctx.text("Corrupted installation")
+            ctx.move_to(0,15)
+            ctx.font_size = 16
+            ctx.text("Please reinstall using latest")
+            ctx.move_to(0, 31)
+            ctx.text("firmware and try again.")
+            return
+
         utils.background(ctx)
 
         ctx.save()
@@ -267,7 +287,7 @@ class PetalHero(Application):
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
-        if UNSUPPORTED:
+        if UNSUPPORTED or self.corrupted:
             return
 
         media.think(delta_ms)
@@ -318,7 +338,7 @@ class PetalHero(Application):
 
     def on_enter(self, vm) -> None:
         super().on_enter(vm)
-        if UNSUPPORTED:
+        if UNSUPPORTED or self.corrupted:
             return
         if self.reentry:
             self.reentry = False
@@ -345,7 +365,7 @@ class PetalHero(Application):
         leds.set_slew_rate(42)
 
     def on_exit(self):
-        if UNSUPPORTED or self.reentry:
+        if UNSUPPORTED or self.corrupted or self.reentry:
             return
         media.stop()
         leds.set_all_rgb(0, 0, 0)
