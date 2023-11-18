@@ -606,7 +606,7 @@ class SongView(BaseView):
                 if e != event and e.time == event.time and e.missed:
                     bad_chord = True
                 
-            if bad_chord:
+            if bad_chord or event.time < self.laststreak:
                 utils.play_fiba(self.app)
                 utils.emit("bad", event.number)
                 self.bad = 1.0
