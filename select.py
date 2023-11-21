@@ -69,6 +69,8 @@ def discover_songs_at(path: str, songs: list, to_process: set, dirs: set):
             st = os.stat(inipath)
             if not stat.S_ISREG(st[0]):
                 to_process.add(s)
+            elif not s.readDifficulties():
+                to_process.add(s)
         except Exception:
             to_process.add(s)
             
@@ -137,7 +139,6 @@ class SelectView(BaseView):
         if self.processing_now and self.is_active() and not self.vm.transitioning:
             self.processing_now.load()
             self.processing_now.getDifficulties()
-            self.processing_now.saveDifficulties()
             self.processing_now = None
             if not self.to_process:
                 utils.emit("processingdone")

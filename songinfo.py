@@ -1,4 +1,5 @@
 import os
+import sys
 
 from .configparser import ConfigParser
 
@@ -74,24 +75,43 @@ class SongInfo(object):
       v = type(v)
     return v
 
-  def getDifficulties(self):
+  def readDifficulties(self):
     if self._difficulties is not None:
       return self._difficulties
 
     diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")
     try:
+      diffs = []
       with open(diffFileName, "rb") as f:
-        self._difficulties = []
-        diffs = f.read(10)
-        for b in diffs:
-          self._difficulties.append(difficulties[int(b)])
-      #if not self._difficulties:
-      #    os.unlink(diffFileName) # TODO: unlink's broken
-      #    raise Exception
-      self._difficulties.sort(key = lambda a: a.id, reverse=True)
+        magic = f.read(6)
+        assert(magic == b"PHDIFF")
+        ver = f.read(1)
+        assert(ver == b"\0")
+        length = f.read(1)[0]
+        difflist = f.read(length)
+        assert(len(difflist) == length)
+        for b in difflist:
+          diffs.append(difficulties[b])
+      diffs.sort(key = lambda a: a.id, reverse=True)
+      self._difficulties = diffs
       return self._difficulties
+    except AssertionError as e:
+      print(f"Assertion failed while processing {self.fileName}")
+      sys.print_exception(e)
+      os.unlink(diffFileName)
     except Exception as e:
-      pass
+      print(f"Error while processing {self.fileName}")
+      sys.print_exception(e)
+
+  def getDifficulties(self):
+    if self._difficulties is not None:
+      return self._difficulties
+
+    diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")
+    if os.path.exists(diffFileName):
+        self.readDifficulties()
+        if self._difficulties is not None:
+          return self._difficulties
 
     # See which difficulties are available
     noteFileName = os.path.join(os.path.dirname(self.fileName), "notes.mid")
@@ -104,21 +124,24 @@ class SongInfo(object):
     
     self._difficulties = list(info.difficulties)
     self._difficulties.sort(key = lambda a: a.id, reverse=True)
-    #except Exception as e:
-    #  print(e)
-    #  return []
+
+    self.saveDifficulties()
+
     return self._difficulties
 
   def saveDifficulties(self):
     if self._difficulties is None:
       return
+
     try:
       diffFileName = os.path.join(os.path.dirname(self.fileName), ".diff.pet")
       with open(diffFileName, "wb") as f:
+        f.write(b"PHDIFF\0")
+        f.write(bytes((len(self._difficulties),)))
         for diff in self._difficulties:
           f.write(bytes([diff.id]))
     except Exception as e:
-      print(e)
+      sys.print_exception(e)
 
   def getName(self):
     return self._get("name")
