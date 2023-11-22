@@ -73,6 +73,7 @@ class SongView(BaseView):
         self.showstreak = 0.0
         self.showstreakval = 0
         self.longeststreak = 0
+        self.badnotes = 0
         self.led_override = [0] * 5
         self.laststreak = -1
         self.notes = set()
@@ -402,7 +403,7 @@ class SongView(BaseView):
             self.finished = True
             media.stop()
             gc.collect()
-            self.vm.replace(score.ScoreView(self.app, self.song, self.data, self.longeststreak, self.difficulty), ViewTransitionBlend())
+            self.vm.replace(score.ScoreView(self.app, self.song, self.data, self.longeststreak, self.badnotes, self.difficulty), ViewTransitionBlend())
             return
 
         if self.streak > self.longeststreak:
@@ -583,6 +584,7 @@ class SongView(BaseView):
                         #print("fiba", petal, self.time, delta_time)
                         utils.play_fiba(self.app)
                         utils.emit("bad", petal)
+                        self.badnotes += 1
                         self.bad = 1.0
                         self.bads[petal] = 1.0
                         self.streak = 0
@@ -609,6 +611,7 @@ class SongView(BaseView):
             if bad_chord or event.time < self.laststreak:
                 utils.play_fiba(self.app)
                 utils.emit("bad", event.number)
+                self.badnotes += 1
                 self.bad = 1.0
                 self.bads[event.number] = 1.0
                 self.streak = 0

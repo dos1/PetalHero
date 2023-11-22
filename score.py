@@ -20,7 +20,7 @@ from . import utils
 from .midireader import difficulties
 
 class ScoreView(BaseView):
-    def __init__(self, app, song, data, streak, difficulty):
+    def __init__(self, app, song, data, streak, badnotes, difficulty):
         super().__init__()
         self.app = app
         self.song = song
@@ -29,12 +29,13 @@ class ScoreView(BaseView):
         self.flower = flower.Flower(0)
         self.time = 0
         self.streak = streak
+        self.badnotes = badnotes
         self.played = False
         if not self.data:
             self.accuracy = 0.42
         else:
             events = data.track.getAllEvents()
-            self.accuracy = len(set(filter(lambda x: x.played and not x.missed, events))) / len(events)
+            self.accuracy = len(set(filter(lambda x: x.played and not x.missed, events))) / (len(events) + badnotes)
         self.stars = int(5.0 * (self.accuracy + 0.05))
 
     def draw(self, ctx: Context) -> None:
