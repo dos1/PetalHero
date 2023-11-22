@@ -3,6 +3,7 @@ import leds
 import random
 import os
 import time
+import sys
 import sys_bl00mbox
 try:
     from st3m.utils import sd_card_plugged as sd_card_present
@@ -62,7 +63,10 @@ def petal_leds(petal, val, color = None):
 def blm_wake(app, timeout):
     if not app or not app.loaded: return
     if app.blm_timeout == 0 and sys_bl00mbox.channel_enable:
-        sys_bl00mbox.channel_enable(app.blm.channel_num)
+        try:
+            sys_bl00mbox.channel_enable(app.blm.channel_num)
+        except Exception as e:
+            sys.print_exception(e)
     if timeout > app.blm_timeout:
         app.blm_timeout = timeout
 
@@ -73,7 +77,10 @@ def blm_timeout(view, delta_ms):
     if app.blm_timeout == 0: return
     app.blm_timeout -= delta_ms
     if app.blm_timeout <= 0 and sys_bl00mbox.channel_disable:
-        sys_bl00mbox.channel_disable(app.blm.channel_num)
+        try:
+            sys_bl00mbox.channel_disable(app.blm.channel_num)
+        except Exception as e:
+            sys.print_exception(e)
         app.blm_timeout = 0
 
 def play_crunch(app):
