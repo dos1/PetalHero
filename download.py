@@ -38,6 +38,8 @@ def download_thread(self):
         if not os.path.exists(rootpath):
             os.mkdir(rootpath)
 
+    downloaded = []
+
     while self.file_list and not self.cancel:
         self.current_song = self.file_list.pop(0)
         self.file_no += 1
@@ -69,9 +71,19 @@ def download_thread(self):
                     req.close()
                     self.file_progress = 1.0
                     continue
-            
+                else:
+                    os.unlink(file_name)
+
+            if os.path.exists(file_name + ".part"):
+                stat = os.stat(file_name + ".part")
+                if stat[6] == total_size:
+                    req.close()
+                    self.file_progress = 1.0
+                    downloaded.append(file_name)
+                    continue
+
             rec_size = 0
-            with open(file_name, "wb") as f:
+            with open(file_name + ".part", "wb") as f:
                 try:
                     while True:
                         new_data = req.raw.read(1024 * 32)
@@ -81,6 +93,7 @@ def download_thread(self):
                         if self.cancel:
                             raise Exception("Cancelled")
                         if not new_data:
+                            downloaded.append(file_name)
                             break
                 except Exception as e:
                     os.unlink(file_name)
@@ -92,14 +105,21 @@ def download_thread(self):
             self.error = True
             utils.emit("downloaderror")
             break
+
     if not self.error:
         try:
+            for filename in downloaded:
+                os.rename(filename + ".part", filename)
             if self.app:
                 self.app.select = select.SelectView(self.app)
         except Exception as e:
             sys.print_exception(e)
-        self.finished = True
-        utils.emit("downloadfinished")
+            self.error = True
+            utils.emit("downloaderror")
+
+        if not self.error:
+            self.finished = True
+            utils.emit("downloadfinished")
     download_lock.release()
 
 class DownloadView(BaseView):
