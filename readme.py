@@ -28,6 +28,7 @@ https://github.com/raynebc/editor-on-fire
 Some places to find charted songs at:
  - https://chorus.fightthe.pw/
  - https://db.c3universe.com/songs/
+ - https://sourceforge.net/p/fretsonfire/code/HEAD/tarball?path=/trunk/data/songs
 
 Have fun!
 """

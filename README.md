@@ -30,6 +30,7 @@ Songs in *.chart* format (and some others) can be converted using [EOF](https://
 Some places to find charted songs at:
  - https://chorus.fightthe.pw/
  - https://db.c3universe.com/songs/
+ - https://sourceforge.net/p/fretsonfire/code/HEAD/tarball?path=/trunk/data/songs
 
 ## License
 
