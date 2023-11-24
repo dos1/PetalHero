@@ -122,10 +122,11 @@ class ScoreView(BaseView):
         super().think(ins, delta_ms)
         media.think(delta_ms)
         utils.blm_timeout(self, delta_ms)
-        self.time += delta_ms / 1000
-        self.timeout -= delta_ms / 1000
+        if self.time > 0:
+            self.timeout -= delta_ms / 1000
         if self.timeout < 0:
             self.timeout = 0
+        self.time += delta_ms / 1000
         
         if self.time > 1.5 and not self.played:
             self.played = True
