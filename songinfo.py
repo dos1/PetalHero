@@ -1,5 +1,6 @@
 import os
 import sys
+import struct
 
 from .configparser import ConfigParser
 
@@ -40,6 +41,41 @@ class MidiInfoReader(MidiOutStream):
       if len(self.difficulties) == len(difficulties):
         raise MidiInfoReader.Done()
 
+class Score():
+  accuracy = None
+  streak = None
+  badnotes = None
+  
+  def __init__(self, score = None):
+    if score is not None:
+      self.accuracy = score.accuracy
+      self.streak = score.streak
+      self.badnotes = score.badnotes
+      
+  def __eq__(self, score):
+    return self.accuracy == score.accuracy and self.streak == score.streak and self.badnotes == score.badnotes
+  
+  def empty(self):
+    return self.accuracy is None or self.streak is None or self.badnotes is None
+  
+  def __repr__(self):
+    if self.empty():
+      return "Score()"
+    return f"Score(acc: {self.accuracy}, str: {self.streak}, bn: {self.badnotes})"
+
+class ScoreSet():
+  def __init__(self):
+    self.max_acc = Score()
+    self.max_streak = Score()
+    
+  def empty(self):
+    return self.max_acc.empty() and self.max_streak.empty()
+    
+  def __repr__(self):
+    if self.empty():
+      return "ScoreSet()"
+    return f"ScoreSet(max_acc: {str(self.max_acc)}, max_str: {str(self.max_streak)})" 
+
 class SongInfo(object):
   def __init__(self, dirName):
     infoFileName = dirName + "/song.ini"
@@ -48,6 +84,7 @@ class SongInfo(object):
     self.fileName      = infoFileName
     self.info          = ConfigParser()
     self._difficulties = None
+    self._scores       = None
 
     try:
       self.info.read(infoFileName)
@@ -142,6 +179,91 @@ class SongInfo(object):
           f.write(bytes([diff.id]))
     except Exception as e:
       sys.print_exception(e)
+  
+  def readScores(self):
+    self._scores = {}
+    for diff in difficulties.values():
+      self._scores[diff] = ScoreSet()
+
+    scoreFileName = os.path.join(os.path.dirname(self.fileName), ".score.pet")
+    if not os.path.exists(scoreFileName):
+      return self._scores
+    
+    try:
+      with open(scoreFileName, "rb") as f:
+        magic = f.read(7)
+        assert(magic == b"PHSCORE")
+        ver = f.read(1)
+        assert(ver == b"\0")
+        length = f.read(1)[0]
+        for i in range(length):
+          diff = f.read(1)[0]
+          assert(diff in difficulties)
+          assert(difficulties[diff] in self._scores)
+          score = self._scores[difficulties[diff]]
+          score.max_acc.accuracy, score.max_acc.streak, score.max_acc.badnotes = struct.unpack('!fII', f.read(12))
+          score.max_streak.accuracy, score.max_streak.streak, score.max_streak.badnotes = struct.unpack('!fII', f.read(12))
+    except Exception as e:
+      sys.print_exception(e)
+
+    return self._scores
+
+  def saveScores(self):
+    try:
+      scoreFileName = os.path.join(os.path.dirname(self.fileName), ".score.pet")
+      with open(scoreFileName, "wb") as f:
+        f.write(b"PHSCORE\0")
+        diffs = tuple(filter(lambda x: not self._scores[x].empty(), self._scores.keys()))
+        f.write(bytes((len(diffs),)))
+        for diff in diffs:
+          score = self._scores[diff]
+          f.write(bytes((diff.id,)))
+          f.write(struct.pack("!fII", score.max_acc.accuracy, score.max_acc.streak, score.max_acc.badnotes))
+          f.write(struct.pack("!fII", score.max_streak.accuracy, score.max_streak.streak, score.max_streak.badnotes))
+    except Exception as e:
+      sys.print_exception(e)
+  
+  def recordScore(self, difficulty, accuracy, streak, badnotes):
+    if self._scores is None:
+      self.readScores()
+      
+    max_acc = self._scores[difficulty].max_acc
+    max_streak = self._scores[difficulty].max_streak
+      
+    save = False
+      
+    if max_acc.empty() or accuracy > max_acc.accuracy:
+      max_acc.accuracy = accuracy
+      max_acc.streak = streak
+      max_acc.badnotes = badnotes
+      save = True
+    elif accuracy == max_acc.accuracy:
+      if streak > max_acc.streak:
+        max_acc.streak = streak
+        max_acc.badnotes = badnotes
+        save = True
+      elif badnotes < max_acc.badnotes:
+        max_acc.badnotes = badnotes
+        save = True
+        
+    if max_streak.empty() or streak > max_streak.streak:
+      max_streak.streak = streak
+      max_streak.accuracy = accuracy
+      max_streak.badnotes = badnotes
+      save = True
+    elif streak == max_streak.streak:
+      if accuracy > max_streak.accuracy:
+        max_streak.accuracy = accuracy
+        max_streak.badnotes = badnotes
+        save = True
+      elif badnotes < max_streak.badnotes:
+        max_streak.badnotes = badnotes
+        save = True
+    
+    if save:
+      self.saveScores()
+
+    return save
 
   def getName(self):
     return self._get("name")
@@ -167,9 +289,15 @@ class SongInfo(object):
     if preview is None or preview < 0 or length is None or length <= 0:
         return 0.1
     return preview / length
+  
+  def getScores(self):
+    if self._scores is None:
+      self.readScores()
+    return self._scores
     
   name          = property(getName, setName)
   artist        = property(getArtist, setArtist)
   delay         = property(getDelay, setDelay)
   difficulties  = property(getDifficulties)
   preview       = property(getPreview)
+  scores        = property(getScores)

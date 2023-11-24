@@ -37,6 +37,9 @@ class ScoreView(BaseView):
             events = data.track.getAllEvents()
             self.accuracy = len(set(filter(lambda x: x.played and not x.missed, events))) / (len(events) + badnotes)
         self.stars = int(5.0 * (self.accuracy + 0.05))
+        
+        self.highscore = self.song.recordScore(difficulty, self.accuracy, streak, badnotes)
+        self.timeout = 5 if self.highscore else 0
 
     def draw(self, ctx: Context) -> None:
         #utils.background(ctx)
@@ -95,20 +98,34 @@ class ScoreView(BaseView):
         ctx.text(f"Accuracy: {int(self.accuracy * 100)}%")
         ctx.move_to(0,58)
         ctx.text(f"Longest streak: {self.streak}")
-                
+        
         ctx.font = "Camp Font 3"
-        ctx.font_size = 16
         ctx.text_align = ctx.CENTER
         ctx.text_baseline = ctx.MIDDLE
-        ctx.gray(0.5)
-        ctx.move_to(0, 84 - math.sin(self.time * 4) * 2)
-        ctx.text("Press the button...")
+
+        alpha = min(self.timeout, 0.5) / 0.5
+        if alpha > 0:
+          ctx.global_alpha = alpha
+          utils.fire_gradient(ctx)
+          ctx.font_size = 18
+          ctx.move_to(0, 85  - math.sin(self.time * 4) * 2)
+          ctx.text("New highscore!")
+        
+        if alpha < 1:
+          ctx.global_alpha = 1.0 - alpha
+          ctx.gray(0.5)
+          ctx.font_size = 16
+          ctx.move_to(0, 84 - math.sin(self.time * 4) * 2)
+          ctx.text("Press the button...")
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
         media.think(delta_ms)
         utils.blm_timeout(self, delta_ms)
         self.time += delta_ms / 1000
+        self.timeout -= delta_ms / 1000
+        if self.timeout < 0:
+            self.timeout = 0
         
         if self.time > 1.5 and not self.played:
             self.played = True

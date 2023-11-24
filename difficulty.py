@@ -24,6 +24,7 @@ class DifficultyView(BaseView):
         if len(self.song.difficulties) > 2:
             self._sc.set_position(1)
         self._scroll_pos = 0
+        self.song.readScores()
 
     def draw(self, ctx: Context) -> None:
         
@@ -96,15 +97,23 @@ class DifficultyView(BaseView):
         ctx.move_to (0, -78)
         ctx.text("DIFFICULTY")
         
-        """
-        ctx.font_size = 15
-        ctx.move_to(0, 78)
-        ctx.text("Put songs into")
-        ctx.move_to(0, 94)
-        ctx.font_size = 15
-        ctx.gray(0.75)
-        ctx.text("/sd/PetalHero")
-        """
+        if self.song.difficulties:
+            score = self.song.scores[self.song.difficulties[self._sc.target_position()]]
+            if not score.empty():
+                ctx.font_size = 15
+                ctx.gray(0.5)
+                ctx.text_align = ctx.RIGHT
+                ctx.font = "Material Icons"
+                ctx.move_to(-7, 86)
+                ctx.text("\ue885")
+                ctx.move_to(-7, 102)
+                ctx.text("\uea0b")
+                ctx.font = "Camp Font 3"
+                ctx.text_align = ctx.LEFT
+                ctx.move_to(-5, 83)
+                ctx.text(f"{int(score.max_acc.accuracy * 100)}%")
+                ctx.move_to(-5, 99)
+                ctx.text(str(score.max_streak.streak))
 
     def think(self, ins: InputState, delta_ms: int) -> None:
         super().think(ins, delta_ms)
