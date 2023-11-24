@@ -199,19 +199,24 @@ class SongView(BaseView):
 
         ctx.line_width = 3
 
-        if not self.debug or True:
-            ctx.gray(0.69)
-            ctx.arc(0, 0, RADIUS + 1.5, 0, tau, 0)
+        for i in range(5):
+            ctx.gray(math.sqrt(self.missed[i]) * 0.55)
+            ctx.arc(0, 0, RADIUS, (tau / 5) * (i - 2.25 - 0.5), (tau / 5) * (i - 2.25 + 0.5), 0)
+            ctx.line_to(0, 0)
             ctx.fill()
-            for i in range(5):
-                ctx.gray(math.sqrt(self.missed[i]) * 0.6)
-                ctx.arc(0, 0, RADIUS - 1.5, (tau / 5) * (i - 2.25 - 0.5), (tau / 5) * (i - 2.25 + 0.5), 0)
-                ctx.line_to(0, 0)
-                ctx.fill()
+
+        if not self.started:
+            pro = 0.0
+        elif self.finished:
+            pro = 1.0
         else:
-            ctx.begin_path()
-            ctx.gray(1.0)
-            utils.circle(ctx, 0, 0, RADIUS)
+            pro = media.get_position() / media.get_duration()
+        ctx.gray(0.64)
+        ctx.arc(0, 0, RADIUS, tau / 4 + tau * pro - 0.01, tau / 4 + tau, 0)
+        ctx.stroke()
+        ctx.gray(0.86)
+        ctx.arc(0, 0, RADIUS, tau / 4, tau / 4 + tau * pro, 0)
+        ctx.stroke()
         
         ctx.save()
         ctx.rotate(tau / 10 + tau / 5)
