@@ -35,7 +35,7 @@ class ScoreView(BaseView):
             self.accuracy = 0.42
         else:
             events = data.track.getAllEvents()
-            self.accuracy = len(set(filter(lambda x: x.played and not x.missed, events))) / (len(events) + badnotes)
+            self.accuracy = sum(map(lambda x: max(0.0, x.played * 1.0 - x.missed * 0.5), events)) / (len(events) + badnotes)
         self.stars = int(5.0 * (self.accuracy + 0.05))
         
         self.highscore = self.song.recordScore(difficulty, self.accuracy, streak, badnotes)
