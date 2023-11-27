@@ -22,6 +22,9 @@ Some rips may need to be resampled first:
 
 You need song.ini, song.mp3 and notes.mid in the song directory.
 
+The "Starter Pack" of songs can be downloaded over Wi-Fi from the game,
+or manually from https://git.flow3r.garden/dos/PetalHero-songs/
+
 Songs in .chart format (and some others) can be converted using EOF:
 https://github.com/raynebc/editor-on-fire
 
