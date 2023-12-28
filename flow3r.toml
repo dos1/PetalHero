@@ -12,4 +12,4 @@ author = "dos"
 license = "GPL-3.0-or-later"
 url = "https://git.flow3r.garden/dos/PetalHero"
 description = "Rhythm game compatible with Frets on Fire"
-version = 3
+version = 4
