@@ -20,6 +20,7 @@ import leds
 import bl00mbox
 import time
 import sys_display
+import gc
 import _thread
 
 UNSUPPORTED = False
@@ -87,6 +88,8 @@ class PetalHero(Application):
             self.blm.foreground = True
             return
 
+        gc.collect()
+
         self.blm = bl00mbox.Channel("Petal Hero")
         self.blm.volume = 14000
 
@@ -111,6 +114,8 @@ class PetalHero(Application):
             return
         
         utils.blm_wake(self, 1)
+
+        gc.collect()
 
         self.app.fiba_sound = []
         for i in range(6):
