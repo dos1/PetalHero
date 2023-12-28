@@ -30,7 +30,7 @@ from . import flower
 from . import score
 
 AUDIO_STARTUP = 750 # how early should audio be loaded
-VIDEO_DELAY = 85 # delay between audio and what's displayed on the screen
+VIDEO_DELAY = 70 # delay between audio and what's displayed on the screen
 INPUT_DELAY = 20 # additional headroom for input handling
 DELTA_THRESHOLD = 60 # above this we assume that there may be missed release events
 RADIUS = 22
