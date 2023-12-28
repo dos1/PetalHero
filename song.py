@@ -431,6 +431,10 @@ class SongView(BaseView):
             if t > 0:
                 self.time = media.get_time() * 1000 - self.song.delay
 
+        if ins.captouch:
+            # force lazy evaluation
+            pass
+
         if self.input.buttons.app.middle.pressed:
             if self.paused:
                 media.play()
